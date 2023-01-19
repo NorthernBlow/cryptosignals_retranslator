@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/python3
 
 import requests
 from bs4 import BeautifulSoup
@@ -27,12 +27,12 @@ except Exception as ex:
 
     try:
         with connection.cursor() as cursor:
-            create_table = "CREATE TABLE IF NOT EXISTS 'users'(id int AUTO_INCREMENT," \
-                " name varchar(32)," \
-                " password varchar(32)," \
-                " email varchar(32), PRIMARY_KEY (id)));"
-            cursor.execute(create_table)
-            print("создалась таблица базы данных")
+            select_all_raws = "SELECT * FROM 'channels'"
+            cursor.execute(select_all_raws)
+            print("выбрали все из бд")
+            rows = cursor.fetchall()
+            for row in rows:
+                print(row)
     finally:
         connection.close()
 
