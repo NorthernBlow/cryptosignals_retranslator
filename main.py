@@ -1,8 +1,42 @@
+#! /usr/bin/env python
+
 import requests
-from bs4 import BeautifulSoup as bs
+from bs4 import BeautifulSoup
 import lxml
 import os
 from urllib import request
+import pymysql
+from config import host, user, password, db_name
+
+
+
+try:
+    connection = pymysql.connect(
+        host=host,
+        port=3306,
+        user=user,
+        password=password,
+        database=db_name,
+        cursorclass=pymysql.cursors.DictCursor
+        )
+    print("Подключилось к бд")
+
+except Exception as ex:
+    print("Подключение сброшено")
+    print(ex)
+
+    try:
+        with connection.cursor() as cursor:
+            create_table = "CREATE TABLE IF NOT EXISTS 'users'(id int AUTO_INCREMENT," \
+                " name varchar(32)," \
+                " password varchar(32)," \
+                " email varchar(32), PRIMARY_KEY (id)));"
+            cursor.execute(create_table)
+            print("создалась таблица базы данных")
+    finally:
+        connection.close()
+
+
 
 
 url = 'https://www.tinkoff.ru/invest/social/profile/De_vint/'
@@ -10,7 +44,7 @@ with request.urlopen(url) as file:
     src = file.read()
 
 
-soup = bs(src, "lxml")
+soup = BeautifulSoup(src, "lxml")
 
 span_classe = soup.find_all("span", class_="TickerWithTooltip__ticker_YdPIW")
 
