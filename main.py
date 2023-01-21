@@ -1,5 +1,16 @@
 #! /usr/bin/python3
 
+##########################################################################
+###     Hi! This bot monitors the signals from the database,           ###
+###     and send notify all members!                                   ###
+##########################################################################
+###                         For Developers Info:                       ###
+###                                                                    ###
+###     1. Use tab, not space                                          ###
+###     2. Write comments for your code                                ###
+##########################################################################
+
+
 import requests
 from bs4 import BeautifulSoup
 import lxml
@@ -8,8 +19,17 @@ from urllib import request
 import pymysql
 from config import host, user, password, db_name
 
+# Here page for parse, later move to Database!!!
+url = 'https://www.tinkoff.ru/invest/social/profile/De_vint/'
+with request.urlopen(url) as file:
+    src = file.read()
+
+# Set param for parse page
+soup = BeautifulSoup(src, "lxml")
+span_classe = soup.find_all("span", class_="TickerWithTooltip__ticker_YdPIW")
 
 
+# Connect to Database
 try:
     connection = pymysql.connect(
         host=host,
@@ -18,16 +38,20 @@ try:
         password=password,
         database=db_name,
         cursorclass=pymysql.cursors.DictCursor
-        )
-    print("Подключилось к бд")
-
+    )
+    print("Подключился к базе данных")
+# Here send message for failed
 except Exception as ex:
-    print("Подключение сброшено")
-    print(ex)
+    print("Подключение сброшено :(")
+    print("Причина: " + ex)
 
+
+# Here tmp solution
+def GetFirstSignal():
+    # Here get signal from Database
     try:
         with connection.cursor() as cursor:
-            select_all_raws = "SELECT * FROM 'channels'"
+            select_all_raws = "SELECT * FROM channels"
             cursor.execute(select_all_raws)
             print("выбрали все из бд")
             rows = cursor.fetchall()
@@ -37,19 +61,14 @@ except Exception as ex:
         connection.close()
 
 
+if __name__ == "__main__":
+    #for var in span_classe:
+    #    for ticker in var:
+    #        print(ticker.strip())
+
+    GetFirstSignal()
 
 
-url = 'https://www.tinkoff.ru/invest/social/profile/De_vint/'
-with request.urlopen(url) as file:
-    src = file.read()
 
 
-soup = BeautifulSoup(src, "lxml")
-
-span_classe = soup.find_all("span", class_="TickerWithTooltip__ticker_YdPIW")
-
-
-for var in span_classe:
-    for ticker in var:
-
-        print(ticker.strip())
+###                         with Love from Russia <3                   ###
