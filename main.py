@@ -68,61 +68,7 @@ channels.readtelegram()
 channels2 = Channels(sockdata)
 channels2.readtinkoff()
 
-# Connect to Database
-# try:
-#     connection = pymysql.connect(
-#         host=host,
-#         port=3306,
-#         user=user,
-#         password=password,
-#         database=db_name,
-#         cursorclass=pymysql.cursors.DictCursor
-#     )
-#     print("Подключился к базе данных")
-# # Here send message for failed
-# except Exception as ex:
-#     print("Подключение сброшено :(")
-#     print(ex)
 
-
-
-
-def GetTinkoffURLS():
-    try:
-        with connection.cursor() as cursor:
-            select_all_raws = "SELECT * FROM pages"
-            cursor.execute(select_all_raws)
-            print("выбрали все из бд")
-            rows = cursor.fetchall()
-            for row in rows:
-                print(rows)
-    except Exception as ex:
-        print(ex)
-
-    return
-
-
-def GetTickers():
-    return
-
-
-def GetKeywords():
-    return
-
-
-# Here tmp solution
-def GetTelegramChannels():
-    # Here get signal from Database
-    try:
-        with connection.cursor() as cursor:
-            select_all_raws = "SELECT chan FROM channels GROUP BY id HAVING id > 0"
-            cursor.execute(select_all_raws)
-            print("выбрали все из бд")
-            rows = cursor.fetchall()
-            for row in rows:
-                print(rows)
-    finally:
-        connection.close()
 
 
 #if __name__ == "__main__":
@@ -130,8 +76,6 @@ def GetTelegramChannels():
     #    for ticker in var:
     #        print(ticker.strip())
 
-    # GetTelegramChannels()
-    # GetTinkoffURLS()
 
 
 
