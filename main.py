@@ -9,10 +9,8 @@
 ##########################################################################
 
 
-import requests
 from bs4 import BeautifulSoup
 import lxml
-import os
 from urllib import request
 import pymysql
 from config import sockdata
