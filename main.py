@@ -43,15 +43,29 @@ try:
 # Here send message for failed
 except Exception as ex:
     print("Подключение сброшено :(")
-    print("Причина: " + ex)
+    print(ex)
+
+
+
+
+def GetTelegramChannels():
+    return
+
+
+def GetTickers():
+    return
+
+
+def GetKeywords():
+    return
 
 
 # Here tmp solution
-def GetFirstSignal():
+def GetTinkoffChannels():
     # Here get signal from Database
     try:
         with connection.cursor() as cursor:
-            select_all_raws = "SELECT * FROM channels"
+            select_all_raws = "SELECT chan FROM channels GROUP BY id HAVING id > 0"
             cursor.execute(select_all_raws)
             print("выбрали все из бд")
             rows = cursor.fetchall()
@@ -66,7 +80,7 @@ if __name__ == "__main__":
     #    for ticker in var:
     #        print(ticker.strip())
 
-    GetFirstSignal()
+    GetTinkoffChannels()
 
 
 
