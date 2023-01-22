@@ -48,7 +48,18 @@ except Exception as ex:
 
 
 
-def GetTelegramChannels():
+def GetTinkoffURLS():
+    try:
+        with connection.cursor() as cursor:
+            select_all_raws = "SELECT * FROM pages"
+            cursor.execute(select_all_raws)
+            print("выбрали все из бд")
+            rows = cursor.fetchall()
+            for row in rows:
+                print(row)
+    except Exception as ex:
+        print(ex)
+
     return
 
 
@@ -61,7 +72,7 @@ def GetKeywords():
 
 
 # Here tmp solution
-def GetTinkoffChannels():
+def GetTelegramChannels():
     # Here get signal from Database
     try:
         with connection.cursor() as cursor:
@@ -80,7 +91,8 @@ if __name__ == "__main__":
     #    for ticker in var:
     #        print(ticker.strip())
 
-    GetTinkoffChannels()
+    GetTelegramChannels()
+    GetTinkoffURLS()
 
 
 
