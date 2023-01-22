@@ -1,4 +1,10 @@
-host = '127.0.0.1'
-user = 'root'
-password = ''
-db_name = 'test'
+import pymysql
+
+
+sockdata = {
+'host': '127.0.0.1',
+'port': 3306,
+'user': 'root',
+'password': '',
+'database': 'test',
+'cursorclass': pymysql.cursors.DictCursor}
