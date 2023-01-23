@@ -27,16 +27,18 @@ span_classe = soup.find_all("span", class_="TickerWithTooltip__ticker_YdPIW")
 
 
 #test data structures:
-
+tgchannel: str = ''
 tickers: str = ''
 
 class Channels:
+
     def __init__(self, database) -> None:
         self.connection = pymysql.connect(**sockdata)
         self.cursor = self.connection.cursor()
 
     
     def readtickers(self) -> str:
+        global tickers
         try:
             with self.connection as connect:
                 self.cursor.execute(
@@ -45,13 +47,15 @@ class Channels:
         except Exception as ex:
             print(ex)
         for ticker in results:
-            for tickers in ticker.values():
-                if type(tickers) == str:
+            for key, value in ticker.items():
+                if type(value) == str:
+                    tickers = value
                     return tickers
 
 
 
     def readtinkoff(self) -> str:
+        global url
         try:
             with self.connection as connect:
                 self.cursor.execute(
@@ -59,28 +63,27 @@ class Channels:
                 results = self.cursor.fetchall()
         except Exception as ex:
             print(ex)
-        for url in results:
-            for urls in url.values():
-                if type(urls) == str:
-                    print(urls)
-        return url
+        for urls in results:
+            for var in urls.values():
+                if type(var) == str:
+                    url = var
+                    return url
 
 
     def readtelegram(self) -> str:
+        global tgchannel
         try:
             with self.connection as connect:
                 self.cursor.execute(
-                    "SELECT * FROM channels")
+                    "SELECT chan FROM channels")
                 results = self.cursor.fetchall()
+                for channel in results:
+                    for key, value in channel.items():
+                        print(value)
+
         except Exception as ex:
             print(ex)
-        for channel in results:
-            for channels in channel.values():
-                if type(channels) == str:
-                    print(channels)
-
-        return url
-
+        
 
     def close(self):
         self.connection.close()
@@ -89,12 +92,12 @@ class Channels:
 
 
 
-channels = Channels(sockdata)
-channels.readtelegram()
+# channels = Channels(sockdata)
+# channels.readtelegram()
 channels2 = Channels(sockdata)
-channels2.readtinkoff()
+channels2.readtelegram()
 
-print(tickers)
+print(tgchannel)
 
 
 #if __name__ == "__main__":
