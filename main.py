@@ -42,15 +42,13 @@ class Channels:
         try:
             with self.connection as connect:
                 self.cursor.execute(
-                    "SELECT * FROM tickers")
+                    "SELECT ticker FROM tickers")
                 results = self.cursor.fetchall()
         except Exception as ex:
             print(ex)
         for ticker in results:
             for key, value in ticker.items():
-                if type(value) == str:
-                    tickers = value
-                    return tickers
+                    tickers = tickers + ' ' + value
 
 
 
@@ -59,15 +57,13 @@ class Channels:
         try:
             with self.connection as connect:
                 self.cursor.execute(
-                    "SELECT * FROM pages")
+                    "SELECT url FROM pages")
                 results = self.cursor.fetchall()
         except Exception as ex:
             print(ex)
         for urls in results:
-            for var in urls.values():
-                if type(var) == str:
-                    url = var
-                    return url
+            for key, value in urls.items():
+                print(value)
 
 
     def readtelegram(self) -> str:
@@ -79,7 +75,7 @@ class Channels:
                 results = self.cursor.fetchall()
                 for channel in results:
                     for key, value in channel.items():
-                        print(value)
+                        tgchannel = tgchannel + ' ' + value
 
         except Exception as ex:
             print(ex)
@@ -92,13 +88,16 @@ class Channels:
 
 
 
-# channels = Channels(sockdata)
-# channels.readtelegram()
+channels = Channels(sockdata)
+channels.readtinkoff()
 channels2 = Channels(sockdata)
 channels2.readtelegram()
+channels3 = Channels(sockdata)
+channels3.readtickers()
 
 print(tgchannel)
-
+print(url)
+print(tickers)
 
 #if __name__ == "__main__":
     #for var in span_classe:
