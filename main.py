@@ -63,7 +63,7 @@ class Channels:
             print(ex)
         for urls in results:
             for key, value in urls.items():
-                print(value)
+                url = url + ' ' + value
 
 
     def readtelegram(self) -> str:
