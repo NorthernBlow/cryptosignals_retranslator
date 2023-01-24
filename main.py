@@ -23,7 +23,7 @@ import re
 tgchannel: str = ''
 tickers: str = ''
 urls: str = ''
-last_ids = []
+last_ids: list = []
 
 class Channels:
 
