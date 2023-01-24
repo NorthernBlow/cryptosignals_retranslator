@@ -33,25 +33,25 @@ class Channels:
     def exists(self, url) -> bool:
         with self.connection as connect:
             self.cursor.execute(
-                "SELECT * FROM messages WHERE url=? AND;"),
+                    "SELECT * FROM messages WHERE url=? AND;"),
             (url)
             results = self.cursor.fetchall()
             print(results)
             return bool(len(results))
 
-    
+
     def readtickers(self) -> str:
         global tickers
         try:
             with self.connection as connect:
                 self.cursor.execute(
-                    "SELECT ticker FROM tickers")
+                        "SELECT ticker FROM tickers")
                 results = self.cursor.fetchall()
         except Exception as ex:
             print(ex)
         for ticker in results:
             for key, value in ticker.items():
-                    tickers = tickers + ' ' + value
+                tickers = tickers + ' ' + value
 
 
 
@@ -60,7 +60,7 @@ class Channels:
         try:
             with self.connection as connect:
                 self.cursor.execute(
-                    "SELECT url FROM pages")
+                        "SELECT url FROM pages")
                 results = self.cursor.fetchall()
         except Exception as ex:
             print(ex)
@@ -74,7 +74,7 @@ class Channels:
         try:
             with self.connection as connect:
                 self.cursor.execute(
-                    "SELECT chan FROM channels")
+                        "SELECT chan FROM channels")
                 results = self.cursor.fetchall()
                 for channel in results:
                     for key, value in channel.items():
@@ -82,11 +82,40 @@ class Channels:
 
         except Exception as ex:
             print(ex)
-        
+
+
+    def parsepage(self) -> str:
+        # Here page for parse
+        global urls
+        urls = urls.split()
+        #print(urls)
+
+        try:
+            for url in urls:
+                #print(url)
+                with request.urlopen(url) as file:
+                    src = file.read()
+                    soup = BeautifulSoup(src, "lxml")
+                    span_classe = soup.find("div", class_="PulsePost__wrapper_QkcQp")
+                    # Находит и вырезает post_id, сохраняет его в переменную
+                    find_post_id = re.compile(r'data-post-id="[^"]*"')
+                    post_id = find_post_id.findall(str(span_classe))
+                    post_id = post_id[0].partition('"')[2][:-1]
+                    #print(post_id)
+                    print(url)
+                    print(post_id)
+                    #print(span_classe.text)
+                    with self.connection as connect:
+                        self.cursor.execute(
+                                "UPDATE pages SET last_post_id = '" + post_id + "' WHERE url = '" + url + "'")
+                        connect.commit()
+
+        except Exception as ex:
+            print(ex)
+
 
     def close(self):
         self.connection.close()
-
 
 
 
@@ -97,30 +126,15 @@ channels2 = Channels(sockdata)
 channels2.readtelegram()
 channels3 = Channels(sockdata)
 channels3.readtickers()
+channels4 = Channels(sockdata)
+channels4.parsepage()
 
 # print(tgchannel)
 # print(url)
 # print(tickers)
 
 
-# Here page for parse
-
-urls = urls.split()
-#print(urls)
-
-for url in urls:
-    #print(url)
-    with request.urlopen(url) as file:
-        src = file.read()
-        soup = BeautifulSoup(src, "lxml")
-        span_classe = soup.find("div", class_="PulsePost__wrapper_QkcQp")
-        find_post_id = re.compile(r'data-post-id="[^"]*"')
-        # Находит и вырезает post_id, сохраняет его в переменную
-        post_id = find_post_id.findall(str(span_classe))
-        post_id = post_id[0].partition('"')[2][:-1]
-        #print(post_id)
-        print(span_classe.text)
-#подготовить спан кляссе к сравнению. 
+#подготовить спан кляссе к сравнению.
 # if tickers in span_classe:
 #         print(tickers.strip())
 # Set param for parse page
