@@ -14,6 +14,7 @@ import lxml
 from urllib import request
 import pymysql
 from config import sockdata
+import re
 
 
 
@@ -21,7 +22,7 @@ from config import sockdata
 #data structures:
 tgchannel: str = ''
 tickers: str = ''
-urls: str = 'https://www.tinkoff.ru/invest/social/profile/De_vint/'
+urls: str = ''
 
 class Channels:
 
@@ -105,14 +106,19 @@ channels3.readtickers()
 # Here page for parse
 
 urls = urls.split()
-print(urls)
+#print(urls)
 
 for url in urls:
-    print(url)
+    #print(url)
     with request.urlopen(url) as file:
         src = file.read()
         soup = BeautifulSoup(src, "lxml")
-        span_classe = soup.find("div", class_="TextLineCollapse__sizeS_BxRAe")
+        span_classe = soup.find("div", class_="PulsePost__wrapper_QkcQp")
+        find_post_id = re.compile(r'data-post-id="[^"]*"')
+        # Находит и вырезает post_id, сохраняет его в переменную
+        post_id = find_post_id.findall(str(span_classe))
+        post_id = post_id[0].partition('"')[2][:-1]
+        #print(post_id)
         print(span_classe.text)
 #подготовить спан кляссе к сравнению. 
 # if tickers in span_classe:
