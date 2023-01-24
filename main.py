@@ -15,26 +15,28 @@ from urllib import request
 import pymysql
 from config import sockdata
 
-# Here page for parse, later move to Database!!!
-url: str = 'https://www.tinkoff.ru/invest/social/profile/De_vint/'
-with request.urlopen(url) as file:
-    src = file.read()
-
-# Set param for parse page
-soup = BeautifulSoup(src, "lxml")
-span_classe = soup.find_all("span", class_="TickerWithTooltip__ticker_YdPIW")
 
 
 
-#test data structures:
+#data structures:
 tgchannel: str = ''
 tickers: str = ''
+urls: str = 'https://www.tinkoff.ru/invest/social/profile/De_vint/'
 
 class Channels:
 
     def __init__(self, database) -> None:
         self.connection = pymysql.connect(**sockdata)
         self.cursor = self.connection.cursor()
+
+    def exists(self, url) -> bool:
+        with self.connection as connect:
+            self.cursor.execute(
+                "SELECT * FROM messages WHERE url=? AND;"),
+            (url)
+            results = self.cursor.fetchall()
+            print(results)
+            return bool(len(results))
 
     
     def readtickers(self) -> str:
@@ -53,7 +55,7 @@ class Channels:
 
 
     def readtinkoff(self) -> str:
-        global url
+        global urls
         try:
             with self.connection as connect:
                 self.cursor.execute(
@@ -61,9 +63,9 @@ class Channels:
                 results = self.cursor.fetchall()
         except Exception as ex:
             print(ex)
-        for urls in results:
-            for key, value in urls.items():
-                url = url + ' ' + value
+        for url in results:
+            for key, value in url.items():
+                urls = urls + ' ' + value
 
 
     def readtelegram(self) -> str:
@@ -95,14 +97,33 @@ channels2.readtelegram()
 channels3 = Channels(sockdata)
 channels3.readtickers()
 
-print(tgchannel)
-print(url)
-print(tickers)
+# print(tgchannel)
+# print(url)
+# print(tickers)
+
+
+# Here page for parse
+
+urls = urls.split()
+print(urls)
+
+for url in urls:
+    print(url)
+    with request.urlopen(url) as file:
+        src = file.read()
+        soup = BeautifulSoup(src, "lxml")
+        span_classe = soup.find("div", class_="TextLineCollapse__sizeS_BxRAe")
+        print(span_classe.text)
+#подготовить спан кляссе к сравнению. 
+# if tickers in span_classe:
+#         print(tickers.strip())
+# Set param for parse page
+
+
+
 
 #if __name__ == "__main__":
-    #for var in span_classe:
-    #    for ticker in var:
-    #        print(ticker.strip())
+    #
 
 
 
