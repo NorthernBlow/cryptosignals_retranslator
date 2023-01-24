@@ -105,12 +105,9 @@ class Channels:
         global last_ids
         urls = urls.split()
         query_code = []
-        #print(urls)
 
         try:
             for url in urls:
-                #print(url)
-                #print(last_ids)
                 with request.urlopen(url) as file:
                     src = file.read()
                     soup = BeautifulSoup(src, "lxml")
@@ -119,15 +116,13 @@ class Channels:
                     find_post_id = re.compile(r'data-post-id="[^"]*"')
                     post_id = find_post_id.findall(str(span_classe))
                     post_id = post_id[0].partition('"')[2][:-1]
+                    # Пропускаем пост, если он уже отправлялся
                     if post_id in last_ids:
                         continue
-                    #print(post_id)
-                    #print(url)
-                    #print(post_id)
+                    # Записываем ID последнего отправленного поста, из URL источника
                     query_code.append((post_id, url))
                     print(span_classe.text)
  
-            #print(query_code)
             # Тут мы записываем ID последнего пересланного поста
             with self.connection as connect:
                 self.cursor.executemany(
