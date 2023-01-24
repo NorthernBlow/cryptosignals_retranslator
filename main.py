@@ -88,6 +88,7 @@ class Channels:
         # Here page for parse
         global urls
         urls = urls.split()
+        query_code = []
         #print(urls)
 
         try:
@@ -104,11 +105,14 @@ class Channels:
                     #print(post_id)
                     print(url)
                     print(post_id)
+                    query_code.append((post_id, url))
                     #print(span_classe.text)
-                    with self.connection as connect:
-                        self.cursor.execute(
-                                "UPDATE pages SET last_post_id = '" + post_id + "' WHERE url = '" + url + "'")
-                        connect.commit()
+ 
+            print(query_code)
+            with self.connection as connect:
+                self.cursor.executemany(
+                        "UPDATE pages SET last_post_id = %s WHERE url = %s;", query_code)
+                connect.commit()
 
         except Exception as ex:
             print(ex)
