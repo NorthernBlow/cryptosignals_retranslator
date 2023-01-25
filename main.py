@@ -133,13 +133,17 @@ class Channels:
                     # Пропускаем пост, если он уже отправлялся
                     print(post_id, '-это пост айди')
                     print(last_ids, '-это ласт айди')
-                    match post_id != last_ids:
+
+                    
+                    match str(post_id).strip('[]') in str(last_ids).strip('[]'):
                         case True:
-                            print('True')
-                            break
+                            print('В песочницу')
+                            
                         case False:
                             with botTG:
                                 botTG.send_message(params['target_chat_id'], span_classe.text)
+                            
+                            
                     #if post_id in last_ids:
                         #pass
                         # if not post_id in last_ids:
