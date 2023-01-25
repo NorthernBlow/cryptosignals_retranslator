@@ -13,8 +13,9 @@ from bs4 import BeautifulSoup
 import lxml
 from urllib import request
 import pymysql
-from config import sockdata
+from config import sockdata, API_ID, API_HASH, TOKENTG
 import re
+from pyrogram import Client, filters
 
 
 
@@ -24,6 +25,19 @@ tgchannel: str = ''
 tickers: str = ''
 urls: str = ''
 last_ids: list = []
+
+#test params to send for
+params = {
+    "source_chat_id": -1001075101206,
+    "target_chat_id": -1001789873317,
+}
+
+
+botTG = Client("cryptobot", api_id=API_ID, api_hash=API_HASH,
+   bot_token=TOKENTG)
+
+
+
 
 class Channels:
 
@@ -117,11 +131,24 @@ class Channels:
                     post_id = find_post_id.findall(str(span_classe))
                     post_id = post_id[0].partition('"')[2][:-1]
                     # Пропускаем пост, если он уже отправлялся
-                    if post_id in last_ids:
-                        continue
+                    print(post_id, '-это пост айди')
+                    print(last_ids, '-это ласт айди')
+                    match post_id != last_ids:
+                        case True:
+                            print('True')
+                            break
+                        case False:
+                            with botTG:
+                                botTG.send_message(params['target_chat_id'], span_classe.text)
+                    #if post_id in last_ids:
+                        #pass
+                        # if not post_id in last_ids:
+                        #     print(span_classe.text)
+                        #     with botTG:
+                        #         botTG.send_message('@NorthernBlow', 'hueheu')
                     # Записываем ID последнего отправленного поста, из URL источника
                     query_code.append((post_id, url))
-                    print(span_classe.text)
+                    #print(span_classe.text)
  
             # Тут мы записываем ID последнего пересланного поста
             with self.connection as connect:
@@ -151,6 +178,11 @@ channels4.readtinkoff2()
 
 channels5 = Channels(sockdata)
 channels5.parsepage()
+
+
+with botTG:
+    print(botTG.export_session_string())
+
 
 # print(tgchannel)
 # print(url)
