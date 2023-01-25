@@ -22,7 +22,7 @@ from pyrogram import Client, filters
 
 #data structures:
 tgchannel: str = ''
-tickers: str = ''
+tickers: list = []
 urls: str = ''
 last_ids: list = []
 
@@ -56,19 +56,19 @@ class Channels:
 
 
     def readtickers(self) -> str:
+        # Тикеры с ключами записываются в словарь,
+        # пример работы с ним ниже:
+        #
+        #print(tickers[1]['keywords']) # Выведет ключи 2-го по счёту тикера из базы
         global tickers
         try:
             with self.connection as connect:
                 self.cursor.execute(
-                        "SELECT ticker FROM tickers")
-                results = self.cursor.fetchall()
+                        "SELECT ticker,keywords FROM tickers")
+                tickers = self.cursor.fetchall()
         except Exception as ex:
             print(ex)
-        for ticker in results:
-            for key, value in ticker.items():
-                tickers = tickers + ' ' + value
-
-
+  
 
     def readtinkoff(self) -> str:
         global urls
@@ -171,21 +171,21 @@ class Channels:
 
 
 
-channels = Channels(sockdata)
-channels.readtinkoff()
-channels2 = Channels(sockdata)
-channels2.readtelegram()
+#channels = Channels(sockdata)
+#channels.readtinkoff()
+#channels2 = Channels(sockdata)
+#channels2.readtelegram()
 channels3 = Channels(sockdata)
 channels3.readtickers()
-channels4 = Channels(sockdata)
-channels4.readtinkoff2()
+#channels4 = Channels(sockdata)
+#channels4.readtinkoff2()
 
-channels5 = Channels(sockdata)
-channels5.parsepage()
+#channels5 = Channels(sockdata)
+#channels5.parsepage()
 
 
-with botTG:
-    print(botTG.export_session_string())
+#with botTG:
+#    print(botTG.export_session_string())
 
 
 # print(tgchannel)
