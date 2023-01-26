@@ -145,6 +145,13 @@ class Channels:
             print(ex)
 
 
+    def isTickerOrKeywords(self, ticker_and_keywords) -> str:
+        # Тут строка вида «SBER,сбер,сбербанк,BTC,биткойн,биток,бтс,бтц»
+        # то есть все тикеры и ключи в одной строке разделеный запятой.
+        # Функция вызывается на 188 строке, заново для каждого нового поста.
+        # 
+        print(ticker_and_keywords)
+
     def parsepage(self) -> str:
         # Here page for parse
         global urls
@@ -172,12 +179,14 @@ class Channels:
                             print('Не отправляем пост', post_id) # Если пост уже отправлялся ранее
                             
                         case False:
+                            ticker_and_keywords: list = []
                             for ticker in tickers:
                                 for value in ticker.values():
-                                    print(value)
+                                    ticker_and_keywords = ticker_and_keywords + value.split(',')
                                     #with botTG:
                                         #botTG.send_message(params['target_chat_id'], span_classe.text)
-                            
+                            self.isTickerOrKeywords(','.join(ticker_and_keywords))
+
                             
                     #if post_id in last_ids:
                         #pass
