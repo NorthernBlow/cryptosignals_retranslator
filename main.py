@@ -98,7 +98,6 @@ class Channels:
                 self.cursor.execute(
                         "SELECT word_for_down FROM wordsdown")
                 wordsdown = self.cursor.fetchall()
-                print(wordsdown)
         except Exception as ex:
             print(ex)
 
@@ -164,17 +163,20 @@ class Channels:
                     post_id = find_post_id.findall(str(span_classe))
                     post_id = post_id[0].partition('"')[2][:-1]
                     # Пропускаем пост, если он уже отправлялся
-                    print(post_id, '-это пост айди')
-                    print(last_ids, '-это ласт айди')
+                    #print(post_id, '-это пост айди')
+                    #print(last_ids, '-это ласт айди')
 
                     
                     match str(post_id).strip('[]') in str(last_ids).strip('[]'):
                         case True:
-                            print('В песочницу')
+                            print('Не отправляем пост', post_id) # Если пост уже отправлялся ранее
                             
                         case False:
-                            with botTG:
-                                botTG.send_message(params['target_chat_id'], span_classe.text)
+                            for ticker in tickers:
+                                for value in ticker.values():
+                                    print(value)
+                                    #with botTG:
+                                        #botTG.send_message(params['target_chat_id'], span_classe.text)
                             
                             
                     #if post_id in last_ids:
@@ -204,21 +206,21 @@ class Channels:
 
 
 
-#channels = Channels(sockdata)
-#channels.readtinkoff()
-#channels2 = Channels(sockdata)
-#channels2.readtelegram()
-#channels3 = Channels(sockdata)
-#channels3.readtickers()
-#channels4 = Channels(sockdata)
-#channels4.readtinkoff2()
-#channels5 = Channels(sockdata)
-#channels5.readwordsup()
+channels = Channels(sockdata)
+channels.readtinkoff()
+channels2 = Channels(sockdata)
+channels2.readtelegram()
+channels3 = Channels(sockdata)
+channels3.readtickers()
+channels4 = Channels(sockdata)
+channels4.readtinkoff2()
+channels5 = Channels(sockdata)
+channels5.readwordsup()
 channels6 = Channels(sockdata)
 channels6.readwordsdown()
 
-#channels7 = Channels(sockdata)
-#channels7.parsepage()
+channels7 = Channels(sockdata)
+channels7.parsepage()
 
 
 #with botTG:
