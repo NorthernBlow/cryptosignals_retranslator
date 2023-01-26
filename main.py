@@ -25,6 +25,8 @@ tgchannel: str = ''
 tickers: list = []
 urls: str = ''
 last_ids: list = []
+wordsup: list = []
+wordsdown: list = []
 
 #test params to send for
 params = {
@@ -69,6 +71,37 @@ class Channels:
         except Exception as ex:
             print(ex)
   
+
+    def readwordsup(self) -> str:
+        # Словарь для сигналов повышения,
+        # пример работы с ними ниже:
+        #
+        #print(wordsup[0]['word_for_up']) # Выведет 1-ю слово/фразу для сигнала повышения
+        global wordsup
+        try:
+            with self.connection as connect:
+                self.cursor.execute(
+                        "SELECT word_for_up FROM wordsup")
+                wordsup = self.cursor.fetchall()
+        except Exception as ex:
+            print(ex)
+
+
+    def readwordsdown(self) -> str:
+        # Словарь для сигналов понижения,
+        # пример работы с ними ниже:
+        #
+        #print(wordsdown[0]['word_for_down']) # Выведет 1-ю слово/фразу для сигнала понижения
+        global wordsdown
+        try:
+            with self.connection as connect:
+                self.cursor.execute(
+                        "SELECT word_for_down FROM wordsdown")
+                wordsdown = self.cursor.fetchall()
+                print(wordsdown)
+        except Exception as ex:
+            print(ex)
+
 
     def readtinkoff(self) -> str:
         global urls
@@ -175,13 +208,17 @@ class Channels:
 #channels.readtinkoff()
 #channels2 = Channels(sockdata)
 #channels2.readtelegram()
-channels3 = Channels(sockdata)
-channels3.readtickers()
+#channels3 = Channels(sockdata)
+#channels3.readtickers()
 #channels4 = Channels(sockdata)
 #channels4.readtinkoff2()
-
 #channels5 = Channels(sockdata)
-#channels5.parsepage()
+#channels5.readwordsup()
+channels6 = Channels(sockdata)
+channels6.readwordsdown()
+
+#channels7 = Channels(sockdata)
+#channels7.parsepage()
 
 
 #with botTG:
