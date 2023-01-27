@@ -16,7 +16,9 @@ import pymysql
 from config import sockdata, API_ID, API_HASH, TOKENTG
 import re
 from pyrogram import Client, filters
-
+from os import environ
+from dotenv import load_dotenv
+from os.path import join, dirname
 
 
 
@@ -29,6 +31,11 @@ wordsup: list = []
 wordsdown: list = []
 stopwords: list = []
 
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+
+
+
 #test params to send for
 params = {
     "source_chat_id": -1001075101206,
@@ -36,8 +43,8 @@ params = {
 }
 
 
-botTG = Client("cryptobot", api_id=API_ID, api_hash=API_HASH,
-   bot_token=TOKENTG)
+botTG = Client("cryptobot", api_id=environ.get('API_ID'), api_hash=environ.get('API_HASH'),
+   bot_token=environ.get('TOKENTG'))
 
 
 
@@ -317,8 +324,8 @@ channels8 = Channels(sockdata)
 channels8.parsepage()
 
 
-#with botTG:
-#    print(botTG.export_session_string())
+with botTG:
+   print(botTG.export_session_string())
 
 
 # print(tgchannel)
