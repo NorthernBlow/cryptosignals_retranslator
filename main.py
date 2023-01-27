@@ -27,6 +27,7 @@ urls: str = ''
 last_ids: list = []
 wordsup: list = []
 wordsdown: list = []
+stopwords: list = []
 
 #test params to send for
 params = {
@@ -71,6 +72,21 @@ class Channels:
         except Exception as ex:
             print(ex)
   
+
+    def readstopwords(self) -> str:
+        # Словарь стоп слов,
+        # пример работы с ними ниже:
+        #
+        #print(stopword[0]['stopword']) # Выведет 1-ю слово/фразу для отправки поста в песочницу
+        global stopwords
+        try:
+            with self.connection as connect:
+                self.cursor.execute(
+                        "SELECT stopword FROM stopwords")
+                stopwords = self.cursor.fetchall()
+        except Exception as ex:
+            print(ex)
+
 
     def readwordsup(self) -> str:
         # Словарь для сигналов повышения,
@@ -146,13 +162,22 @@ class Channels:
 
 
     def isTickerOrKeywords(self, ticker_and_keywords, post_text) -> str:
-        print(ticker_and_keywords)
-        print(post_text.split())
-        tmp = set(ticker_and_keywords) & set(post_text.replace("$", "").split())
-        if tmp:
-            print("Найдены совпадения, парсим пост: " + str(tmp))
+        #print(ticker_and_keywords)
+        #print(post_text.split())
+        stopwords_list: list = []
+        for stopword in stopwords:
+            for value in stopword.values():
+                stopwords_list = stopwords_list + value.split(',')
+
+        sandbox = set(stopwords_list) & set(post_text.replace("$", "").split())
+        if sandbox:
+            print("В песочницу! " + str(sandbox))
         else:
-            print("Совпадений нет")
+            tmp = set(ticker_and_keywords) & set(post_text.replace("$", "").split())
+            if tmp:
+                print("Найдены совпадения, парсим пост: " + str(tmp))
+            else:
+                print("Совпадений нет")
 
     def parsepage(self) -> str:
         # Here page for parse
@@ -231,9 +256,11 @@ channels5 = Channels(sockdata)
 channels5.readwordsup()
 channels6 = Channels(sockdata)
 channels6.readwordsdown()
-
 channels7 = Channels(sockdata)
-channels7.parsepage()
+channels7.readstopwords()
+
+channels8 = Channels(sockdata)
+channels8.parsepage()
 
 
 #with botTG:
