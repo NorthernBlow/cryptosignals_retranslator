@@ -164,18 +164,72 @@ class Channels:
     def isTickerOrKeywords(self, ticker_and_keywords, post_text) -> str:
         #print(ticker_and_keywords)
         #print(post_text.split())
+
+        # Делаем из словаря список
+        #
         stopwords_list: list = []
         for stopword in stopwords:
             for value in stopword.values():
                 stopwords_list = stopwords_list + value.split(',')
+        stopwords_list = map(str.lower, stopwords_list)
 
+        # Парсим стоп слова в тесте поста
+        #
         sandbox = set(stopwords_list) & set(post_text.replace("$", "").split())
         if sandbox:
-            print("В песочницу! " + str(sandbox))
+            print("В песочницу! Стоп слово: " + str(sandbox))
         else:
             tmp = set(ticker_and_keywords) & set(post_text.replace("$", "").split())
             if tmp:
                 print("Найдены совпадения, парсим пост: " + str(tmp))
+
+
+
+
+                # Парсим слова/фразы для сигналов на повышение
+                # Делаем из словаря список
+                #
+                wordsup_list: list = []
+                for word_for_up in wordsup:
+                    for value in word_for_up.values():
+                        wordsup_list = wordsup_list + value.split(',')
+                wordsup_list = map(str.lower, wordsup_list)
+
+                # Такой способ ищет слова и фразы в тесте поста
+                #
+                for word_for_up in wordsup_list:
+                    if word_for_up in post_text:
+                        print("Отправлен сигнал на повышение для " + str(tmp) + ", триггер: " + str(word_for_up))
+
+                # А этот способ только отдельные слова
+                #
+                #signal_up = set(wordsup_list) & set(post_text.split())
+                #if signal_up:
+                #    print("Отправляем сигнал повышение для " + str(tmp) + ", триггер: "+ str(signal_up))
+
+
+
+
+                # Парсим слова/фразы для сигналов на понижение
+                # Делаем из словаря список
+                #
+                wordsdown_list: list = []
+                for word_for_down in wordsdown:
+                    for value in word_for_down.values():
+                        wordsdown_list = wordsdown_list + value.split(',')
+                wordsdown_list = map(str.lower, wordsdown_list)
+
+                # Такой способ ищет слова и фразы в тесте поста
+                #
+                for word_for_down in wordsdown_list:
+                    if word_for_down in post_text:
+                        print("Отправлен сигнал на понижение для " + str(tmp) + ", триггер: " + str(word_for_down))
+                # А этот способ только отдельные слова
+                #
+                #signal_down = set(wordsdown_list) & set(post_text.split())
+                #if signal_down:
+                #    print("Отправляем сигнал на понижение для " + str(tmp) + ", триггер: " + str(signal_down))
+
             else:
                 print("Совпадений нет")
 
