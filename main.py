@@ -243,6 +243,9 @@ class Channels:
 
             else:
                 print("Совпадений нет")
+                query_sandbox = [(src_url, post_text, "Нет тикеров")]
+                self.cursor.executemany(
+                        "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
 
     def parsepage(self) -> str:
         # Here page for parse
