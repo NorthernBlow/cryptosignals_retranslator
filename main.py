@@ -168,7 +168,7 @@ class Channels:
             print(ex)
 
 
-    def isTickerOrKeywords(self, ticker_and_keywords, post_text) -> str:
+    def isTickerOrKeywords(self, ticker_and_keywords, post_text, src_url) -> str:
         #print(ticker_and_keywords)
         #print(post_text.split())
 
@@ -185,6 +185,10 @@ class Channels:
         sandbox = set(stopwords_list) & set(post_text.replace("$", "").split())
         if sandbox:
             print("В песочницу! Стоп слово: " + str(sandbox))
+            # Тут мы записываем пост в базу
+            query_sandbox = [(src_url, post_text, "Стоп слово " + str(sandbox))]
+            self.cursor.executemany(
+                    "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
         else:
             tmp = set(ticker_and_keywords) & set(post_text.replace("$", "").split())
             if tmp:
@@ -275,7 +279,7 @@ class Channels:
                                     #with botTG:
                                         #botTG.send_message(params['target_chat_id'], span_classe.text)
                             ticker_and_keywords = map(str.lower, ticker_and_keywords) # Переводит список тикеров из базы в нижний регистр
-                            self.isTickerOrKeywords(ticker_and_keywords, post_div.text.lower()) # Отправляет текст поста в нижнем регистре в функцию парсинга поста на тикеры и ключи
+                            self.isTickerOrKeywords(ticker_and_keywords, post_div.text.lower(), url) # Отправляет текст поста в нижнем регистре в функцию парсинга поста на тикеры и ключи
 
                             
                     #if post_id in last_ids:
@@ -292,7 +296,7 @@ class Channels:
             with self.connection as connect:
                 self.cursor.executemany(
                         "UPDATE pages SET last_post_id = %s WHERE url = %s;", query_code)
-                #connect.commit()
+                connect.commit()
 
         except Exception as ex:
             print("parsepage func:")
