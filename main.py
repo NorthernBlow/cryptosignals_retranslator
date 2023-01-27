@@ -145,12 +145,14 @@ class Channels:
             print(ex)
 
 
-    def isTickerOrKeywords(self, ticker_and_keywords) -> str:
-        # Тут строка вида «SBER,сбер,сбербанк,BTC,биткойн,биток,бтс,бтц»
-        # то есть все тикеры и ключи в одной строке разделеный запятой.
-        # Функция вызывается на 188 строке, заново для каждого нового поста.
-        # 
+    def isTickerOrKeywords(self, ticker_and_keywords, post_text) -> str:
         print(ticker_and_keywords)
+        print(post_text.split())
+        tmp = set(ticker_and_keywords) & set(post_text.replace("$", "").split())
+        if tmp:
+            print("Найдены совпадения, парсим пост: " + str(tmp))
+        else:
+            print("Совпадений нет")
 
     def parsepage(self) -> str:
         # Here page for parse
@@ -165,6 +167,7 @@ class Channels:
                     src = file.read()
                     soup = BeautifulSoup(src, "lxml")
                     span_classe = soup.find("div", class_="PulsePost__wrapper_QkcQp")
+                    post_div = span_classe.find("div", class_="TextLineCollapse__sizeS_BxRAe")
                     # Находит и вырезает post_id, сохраняет его в переменную
                     find_post_id = re.compile(r'data-post-id="[^"]*"')
                     post_id = find_post_id.findall(str(span_classe))
@@ -185,7 +188,8 @@ class Channels:
                                     ticker_and_keywords = ticker_and_keywords + value.split(',')
                                     #with botTG:
                                         #botTG.send_message(params['target_chat_id'], span_classe.text)
-                            self.isTickerOrKeywords(','.join(ticker_and_keywords))
+                            ticker_and_keywords = map(str.lower, ticker_and_keywords) # Переводит список тикеров из базы в нижний регистр
+                            self.isTickerOrKeywords(ticker_and_keywords, post_div.text.lower()) # Отправляет текст поста в нижнем регистре в функцию парсинга поста на тикеры и ключи
 
                             
                     #if post_id in last_ids:
@@ -202,7 +206,7 @@ class Channels:
             with self.connection as connect:
                 self.cursor.executemany(
                         "UPDATE pages SET last_post_id = %s WHERE url = %s;", query_code)
-                connect.commit()
+                #connect.commit()
 
         except Exception as ex:
             print("parsepage func:")
