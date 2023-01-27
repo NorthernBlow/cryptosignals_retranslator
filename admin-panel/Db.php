@@ -101,6 +101,17 @@ class Database
         }
     }
 
+    function getSandbox()
+    {
+        try {
+            $stmt = $this->db->query('SELECT * FROM sandbox ORDER BY id DESC');
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            // print $e for Log here!
+            return false;
+        }
+    }
+
     function addUser($username, $token)
     {
         $stmt = $this->db->prepare(
