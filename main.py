@@ -19,6 +19,7 @@ from pyrogram import Client, filters
 from os import environ
 from dotenv import load_dotenv
 from os.path import join, dirname
+import string
 
 
 
@@ -195,6 +196,39 @@ class Channels:
                 print("Найдены совпадения, парсим пост: " + str(tmp))
 
 
+                #сюда загружаем словарь с великим и могучим
+
+                russian_check = re.compile(r'[А-яа-я0-9]')
+
+
+
+                #здесь у нас то, что попадает в tmp. тикеры и ключи, которые нашли свою половинку в спарсенном тексте
+                #далее в переменной to_delete я привожу к строке и удаляю всю шерсть с пунктуацией
+                to_delete = str(tmp).translate(str.maketrans("", "", string.punctuation))
+                to_deleteRU = to_delete.split()
+                
+                str_final: list = []
+                one_string: str = ''
+
+
+                #в этом цикле мы проходимся по созданному выше списку из русских слов
+                #в условии проверяем, сошлось ли. если True добавляем найденное слово в новый список
+                for i in to_deleteRU:
+                    if russian_check.match(i):
+                        str_final.append(i)
+
+
+                #тут мы переводим список с вхождениями русских слов обратно в строку.
+                for i in str_final:
+                    one_string = one_string + ' ' + i
+
+                #здесь удалил пробел в начале
+                one_string = one_string.replace(' ', '', 1)
+
+                #переводим снова в список. смотрим че сошлось
+                for i in to_delete.split():
+                    if not one_string in i:
+                        print(i)
 
 
                 # Парсим слова/фразы для сигналов на повышение
@@ -210,7 +244,9 @@ class Channels:
                 #
                 for word_for_up in wordsup_list:
                     if word_for_up in post_text:
-                        print("Отправлен сигнал на повышение для " + str(tmp) + ", триггер: " + str(word_for_up))
+                        with botTG:
+                            botTG.send_message(params['target_chat_id'], "Отправлен сигнал на повышение для " + to_delete.replace(one_string, '') + ", триггер: " + str(word_for_up))
+                        #print("Отправлен сигнал на повышение для " + to_delete.replace(one_string, '') + ", триггер: " + str(word_for_up))
 
                 # А этот способ только отдельные слова
                 #
@@ -299,7 +335,7 @@ class Channels:
             with self.connection as connect:
                 self.cursor.executemany(
                         "UPDATE pages SET last_post_id = %s WHERE url = %s;", query_code)
-                connect.commit()
+                # connect.commit()
 
         except Exception as ex:
             print("parsepage func:")
