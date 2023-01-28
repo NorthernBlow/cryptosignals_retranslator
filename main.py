@@ -172,6 +172,13 @@ class Channels:
     def isTickerOrKeywords(self, ticker_and_keywords, post_text, src_url) -> str:
         #print(ticker_and_keywords)
         #print(post_text.split())
+        
+        # Удаляем ВСЕ символы из текста поста,
+        # для корректного сравнения.
+        # Оригинальный пост сохраняется в post_text
+        #
+        chars = re.escape(string.punctuation)
+        post_clean_text = re.sub(r'['+chars+']', '', post_text)
 
         # Делаем из словаря список
         #
@@ -183,7 +190,7 @@ class Channels:
 
         # Парсим стоп слова в тесте поста
         #
-        sandbox = set(stopwords_list) & set(post_text.replace("$", "").split())
+        sandbox = set(stopwords_list) & set(post_clean_text.split())
         if sandbox:
             print("В песочницу! Стоп слово: " + str(sandbox))
             # Тут мы записываем пост в базу
@@ -191,61 +198,120 @@ class Channels:
             self.cursor.executemany(
                     "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
         else:
-            tmp = set(ticker_and_keywords) & set(post_text.replace("$", "").split())
-            if tmp:
-                print("Найдены совпадения, парсим пост: " + str(tmp))
+            #print()
+            #print("DEBUG INFO:")
+            #print()
+            #print(ticker_and_keywords)
+            #print(post_clean_text.split())
+            #print()
+
+
+            ticker_name: str = ""
+            ticker_count: int = 0
+            signal_action: str = ""
+            for ticker in ticker_and_keywords:
+
+                if ticker in post_clean_text:
+                    print("Найден тикер " + ticker)
+                    ticker_name = ticker
+                    ticker_count += 1
                 
-                # Парсим слова/фразы для сигналов на повышение
-                # Делаем из словаря список
-                #
-                wordsup_list: list = []
-                for word_for_up in wordsup:
-                    for value in word_for_up.values():
-                        wordsup_list = wordsup_list + value.split(',')
-                wordsup_list = map(str.lower, wordsup_list)
+                    # Парсим слова/фразы для сигналов на повышение
+                    # Делаем из словаря список
+                    #
+                    wordsup_list: list = []
+                    for word_for_up in wordsup:
+                        for value in word_for_up.values():
+                            wordsup_list = wordsup_list + value.split(',')
+                    wordsup_list = map(str.lower, wordsup_list)
 
-                # Такой способ ищет слова и фразы в тесте поста
-                #
-                for word_for_up in wordsup_list:
-                    if word_for_up in post_text:
-                        with botTG:
-                            botTG.send_message(params['target_chat_id'], "Отправлен сигнал на повышение для " + str(tmp))
-                        #print("Отправлен сигнал на повышение для " + to_delete.replace(one_string, '') + ", триггер: " + str(word_for_up))
-
-                # А этот способ только отдельные слова
-                #
-                #signal_up = set(wordsup_list) & set(post_text.split())
-                #if signal_up:
-                #    print("Отправляем сигнал повышение для " + str(tmp) + ", триггер: "+ str(signal_up))
+                    # Такой способ ищет слова и фразы в тесте поста
+                    #
+                    for word_for_up in wordsup_list:
+                        if word_for_up in post_clean_text:
+                            signal_action = "повышение"
+                            print("Отправлен сигнал на повышение для " + ticker  + ", триггер: " + str(word_for_up)) 
 
 
+                    # Парсим слова/фразы для сигналов на понижение
+                    # Делаем из словаря список
+                    #
+                    wordsdown_list: list = []
+                    for word_for_down in wordsdown:
+                        for value in word_for_down.values():
+                            wordsdown_list = wordsdown_list + value.split(',')
+                    wordsdown_list = map(str.lower, wordsdown_list)
+
+                    # Такой способ ищет слова и фразы в тесте поста
+                    #
+                    for word_for_down in wordsdown_list:
+                        if word_for_down in post_clean_text:
+                            signal_action = "понижение"
+                            print("Отправлен сигнал на понижение для " + ticker + ", триггер: " + str(word_for_down))
+
+                else:
+                    tmp = set(ticker_and_keywords[ticker]) & set(post_clean_text.split())
+
+                    if tmp:
+                        print("Найдены совпадения по " + ticker + ", парсим пост. " + str(tmp))
+                        ticker_name = ticker
+                        ticker_count += 1
+                
+                        # Парсим слова/фразы для сигналов на повышение
+                        # Делаем из словаря список
+                        #
+                        wordsup_list: list = []
+                        for word_for_up in wordsup:
+                            for value in word_for_up.values():
+                                wordsup_list = wordsup_list + value.split(',')
+                        wordsup_list = map(str.lower, wordsup_list)
+
+                        # Такой способ ищет слова и фразы в тесте поста
+                        #
+                        for word_for_up in wordsup_list:
+                            if word_for_up in post_clean_text:
+                                signal_action = "повышение"
+                                print("Обнаружен сигнал на повышение для " + ticker  + ", триггер: " + str(word_for_up)) 
 
 
-                # Парсим слова/фразы для сигналов на понижение
-                # Делаем из словаря список
-                #
-                wordsdown_list: list = []
-                for word_for_down in wordsdown:
-                    for value in word_for_down.values():
-                        wordsdown_list = wordsdown_list + value.split(',')
-                wordsdown_list = map(str.lower, wordsdown_list)
+                        # Парсим слова/фразы для сигналов на понижение
+                        # Делаем из словаря список
+                        #
+                        wordsdown_list: list = []
+                        for word_for_down in wordsdown:
+                            for value in word_for_down.values():
+                                wordsdown_list = wordsdown_list + value.split(',')
+                        wordsdown_list = map(str.lower, wordsdown_list)
 
-                # Такой способ ищет слова и фразы в тесте поста
-                #
-                for word_for_down in wordsdown_list:
-                    if word_for_down in post_text:
-                        print("Отправлен сигнал на понижение для " + str(tmp) + ", триггер: " + str(word_for_down))
-                # А этот способ только отдельные слова
-                #
-                #signal_down = set(wordsdown_list) & set(post_text.split())
-                #if signal_down:
-                #    print("Отправляем сигнал на понижение для " + str(tmp) + ", триггер: " + str(signal_down))
+                        # Такой способ ищет слова и фразы в тесте поста
+                        #
+                        for word_for_down in wordsdown_list:
+                            if word_for_down in post_clean_text:
+                                signal_action = "понижение"
+                                print("Обнаружен сигнал на понижение для " + ticker + ", триггер: " + str(word_for_down))
+                    else:
+                        print("Совпадений по " + ticker + " нет")
+                        query_sandbox = [(src_url, post_text, "Нет тикеров")]
+                        self.cursor.executemany(
+                                "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
 
+
+            if ticker_count == 1 and len(signal_action) < 3:
+                print("Маркеров для сигнала не найдено. " + ticker)
+                query_sandbox = [(src_url, post_text, "Нет маркеров (" + ticker_name + ")")]
+                self.cursor.executemany(
+                        "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
+            elif ticker_count == 1:
+                with botTG:
+                    botTG.send_message(params['target_chat_id'], "Сигнал: " + ticker_name + " " + signal_action)
+            elif ticker_count >= 2:
+                print("Найдено 2 и более тикеров в посте!")
             else:
-                print("Совпадений нет")
+                print("Совпадений по " + ticker + " нет")
                 query_sandbox = [(src_url, post_text, "Нет тикеров")]
                 self.cursor.executemany(
                         "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
+
 
     def parsepage(self) -> str:
         # Here page for parse
@@ -275,22 +341,14 @@ class Channels:
                             print('Не отправляем пост', post_id) # Если пост уже отправлялся ранее
                             
                         case False:
-                            ticker_and_keywords: list = []
+                            ticker_and_keywords: dict = {}
                             for ticker in tickers:
-                                for value in ticker.values():
-                                    ticker_and_keywords = ticker_and_keywords + value.split(',')
-                                    #with botTG:
-                                        #botTG.send_message(params['target_chat_id'], span_classe.text)
-                            ticker_and_keywords = map(str.lower, ticker_and_keywords) # Переводит список тикеров из базы в нижний регистр
+                                ticker_and_keywords[ticker['ticker']] = ticker['keywords'].split(',')
+
+                            #ticker_and_keywords = map(str.lower, ticker_and_keywords) # Переводит список тикеров из базы в нижний регистр
                             self.isTickerOrKeywords(ticker_and_keywords, post_div.text.lower(), url) # Отправляет текст поста в нижнем регистре в функцию парсинга поста на тикеры и ключи
 
-                            
-                    #if post_id in last_ids:
-                        #pass
-                        # if not post_id in last_ids:
-                        #     print(span_classe.text)
-                        #     with botTG:
-                        #         botTG.send_message('@NorthernBlow', 'hueheu')
+
                     # Записываем ID последнего отправленного поста, из URL источника
                     query_code.append((post_id, url))
                     #print(span_classe.text)
@@ -299,7 +357,7 @@ class Channels:
             with self.connection as connect:
                 self.cursor.executemany(
                         "UPDATE pages SET last_post_id = %s WHERE url = %s;", query_code)
-                # connect.commit()
+                connect.commit()
 
         except Exception as ex:
             print("parsepage func:")
@@ -331,8 +389,8 @@ channels8 = Channels(sockdata)
 channels8.parsepage()
 
 
-with botTG:
-   print(botTG.export_session_string())
+#with botTG:
+   #print(botTG.export_session_string())
 
 
 # print(tgchannel)
