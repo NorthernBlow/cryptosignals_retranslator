@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 import lxml
 from urllib import request
 import pymysql
-from config import sockdata, API_ID, API_HASH, TOKENTG
+from config import sockdata
 import re
 from pyrogram import Client, filters
 from os import environ
@@ -194,43 +194,7 @@ class Channels:
             tmp = set(ticker_and_keywords) & set(post_text.replace("$", "").split())
             if tmp:
                 print("Найдены совпадения, парсим пост: " + str(tmp))
-
-
-                #сюда загружаем словарь с великим и могучим
-
-                russian_check = re.compile(r'[А-яа-я0-9]')
-
-
-
-                #здесь у нас то, что попадает в tmp. тикеры и ключи, которые нашли свою половинку в спарсенном тексте
-                #далее в переменной to_delete я привожу к строке и удаляю всю шерсть с пунктуацией
-                to_delete = str(tmp).translate(str.maketrans("", "", string.punctuation))
-                to_deleteRU = to_delete.split()
                 
-                str_final: list = []
-                one_string: str = ''
-
-
-                #в этом цикле мы проходимся по созданному выше списку из русских слов
-                #в условии проверяем, сошлось ли. если True добавляем найденное слово в новый список
-                for i in to_deleteRU:
-                    if russian_check.match(i):
-                        str_final.append(i)
-
-
-                #тут мы переводим список с вхождениями русских слов обратно в строку.
-                for i in str_final:
-                    one_string = one_string + ' ' + i
-
-                #здесь удалил пробел в начале
-                one_string = one_string.replace(' ', '', 1)
-
-                #переводим снова в список. смотрим че сошлось
-                for i in to_delete.split():
-                    if not one_string in i:
-                        print(i)
-
-
                 # Парсим слова/фразы для сигналов на повышение
                 # Делаем из словаря список
                 #
@@ -245,7 +209,7 @@ class Channels:
                 for word_for_up in wordsup_list:
                     if word_for_up in post_text:
                         with botTG:
-                            botTG.send_message(params['target_chat_id'], "Отправлен сигнал на повышение для " + to_delete.replace(one_string, '') + ", триггер: " + str(word_for_up))
+                            botTG.send_message(params['target_chat_id'], "Отправлен сигнал на повышение для " + str(tmp))
                         #print("Отправлен сигнал на повышение для " + to_delete.replace(one_string, '') + ", триггер: " + str(word_for_up))
 
                 # А этот способ только отдельные слова
