@@ -198,13 +198,6 @@ class Channels:
             self.cursor.executemany(
                     "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
         else:
-            #print()
-            #print("DEBUG INFO:")
-            #print()
-            #print(ticker_and_keywords)
-            #print(post_clean_text.split())
-            #print()
-
 
             ticker_name: str = ""
             ticker_count: int = 0
@@ -306,6 +299,10 @@ class Channels:
                     botTG.send_message(params['target_chat_id'], "Сигнал: " + ticker_name + " " + signal_action)
             elif ticker_count >= 2:
                 print("Найдено 2 и более тикеров в посте!")
+                query_sandbox = [(src_url, post_text, "Больше 1 тикера")]
+                self.cursor.executemany(
+                        "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
+
             else:
                 print("Совпадений по " + ticker + " нет")
                 query_sandbox = [(src_url, post_text, "Нет тикеров")]
