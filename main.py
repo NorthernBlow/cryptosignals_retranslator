@@ -21,6 +21,7 @@ from dotenv import load_dotenv
 from os.path import join, dirname
 import string
 import json
+import asyncio
 
 
 
@@ -171,18 +172,23 @@ class Channels:
                 self.cursor.execute(
                         "SELECT chan FROM channels")
                 results = self.cursor.fetchall()
-                for channel in results:
-                    for key, value in channel.items():
-                        tgchannel = tgchannel + ' ' + value
+                tgchannel = results
+                # for channel in results:
+                #     print(channel['chan'])
+                #     with botTG:
+                #         tmp = botTG.join_chat((channel['chan']))
+                #         #print(botTG.join_chat(int(channel['chan'])))
+                #     for key, value in channel.items():
+                #         tgchannel = tgchannel + ' ' + value
 
 
         except Exception as ex:
             print(ex)
-        tgchannel = tgchannel.split()
+        #tgchannel = tgchannel.split()
         #print(tgchannel)
-        for channel in tgchannel:
-            tgchannel = channel
-        print(tgchannel)
+        # for channel in tgchannel:
+        #     tgchannel = channel
+        # print(tgchannel)
         return tgchannel
 
 
@@ -384,10 +390,22 @@ class Channels:
 
 
 
+
+def main():
+    botTG.run()
+    channels2 = Channels(sockdata)
+    channels2.readtelegram()
+    for channel in tgchannel:
+        with botTG:
+            tmp = botTG.join_chat((channel['chan']))
+    
+    
+    print('любой текст')
+
+
 channels = Channels(sockdata)
 channels.readtinkoff()
-channels2 = Channels(sockdata)
-channels2.readtelegram()
+
 channels3 = Channels(sockdata)
 channels3.readtickers()
 channels4 = Channels(sockdata)
@@ -406,24 +424,25 @@ channels9 = Channels(sockdata)
 
 
 
-@botTG.on_message(filters.chat(params["source_chat_id"]))
+@botTG.on_message()
 async def signaltotelegram(client, message):
+    print(message)
+
     # проводим проверку с помощью генератора множеств
-    if {i.lower().translate(str.maketrans("", "", string.punctuation)) for i in message.text.split(' ')}\
-        .intersection(set(json.load(open('dump.json')))) != set():
-        await botTG.forward_messages(params["target_chat_id"], params["source_chat_id"], message.id, message.text)
-        print(message.date)
-        # складываем сообщение в базу данных
-        channels9.addtgid(params["source_chat_id"], message.text)
-
-
-def main():
-    botTG.run()
+    # if {i.lower().translate(str.maketrans("", "", string.punctuation)) for i in message.text.split(' ')}\
+    #     .intersection(set(json.load(open('dump.json')))) != set():
+    #     await botTG.forward_messages(params["target_chat_id"], params["source_chat_id"], message.id, message.text)
+    #     print(message.date)
+    #     # складываем сообщение в базу данных
+    #     channels9.addtgid(params["source_chat_id"], message.text)
 
 
 
-if __name__ == '__main__':
-    main()
+
+
+
+main()
+
 
 #with botTG:
    #print(botTG.export_session_string())
