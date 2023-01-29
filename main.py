@@ -56,6 +56,16 @@ class Channels:
         self.connection = pymysql.connect(**sockdata)
         self.cursor = self.connection.cursor()
 
+
+
+    def addtgid(self, source: int, text: str):
+        with self.connection as connect:
+            return self.cursor.executemany(
+                        "INSERT INTO 'messageid' ('source', 'text') VALUES (%s, %s);", source, messagetext)
+
+
+
+
     def exists(self, url) -> bool:
         with self.connection as connect:
             self.cursor.execute(
@@ -385,27 +395,31 @@ channels7.readstopwords()
 channels8 = Channels(sockdata)
 channels8.parsepage()
 
+channels9 = Channels(sockdata)
+
+
+
+@botTG.on_message(filters.chat(params["source_chat_id"]))
+async def signaltotelegram(client, message):
+    # проводим проверку с помощью генератора множеств
+    if {i.lower().translate(str.maketrans("", "", string.punctuation)) for i in message.text.split(' ')}\
+        .intersection(set(json.load(open('dump.json')))) != set():
+        await botTG.forward_messages(params["target_chat_id"], params["source_chat_id"], message.id, message.text)
+        print(message.date)
+        # складываем сообщение в базу данных
+        channels9.addtgid(params["source_chat_id"], message.text)
+
+
+def main():
+    botTG.run()
+
+
+
+if __name__ == '__main__':
+    main()
 
 #with botTG:
    #print(botTG.export_session_string())
-
-
-# print(tgchannel)
-# print(url)
-# print(tickers)
-
-
-#подготовить спан кляссе к сравнению.
-# if tickers in span_classe:
-#         print(tickers.strip())
-# Set param for parse page
-
-
-
-
-#if __name__ == "__main__":
-    #
-
 
 
 

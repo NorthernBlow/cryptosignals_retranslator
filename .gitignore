@@ -5,3 +5,4 @@ admin_panel.sql
 cryptobot.session
 .env
 dump.json
+sandbox.sql
