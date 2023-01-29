@@ -20,6 +20,7 @@ from os import environ
 from dotenv import load_dotenv
 from os.path import join, dirname
 import string
+import json
 
 
 
@@ -44,8 +45,7 @@ params = {
 }
 
 
-botTG = Client("cryptobot", api_id=environ.get('API_ID'), api_hash=environ.get('API_HASH'),
-   bot_token=environ.get('TOKENTG'))
+botTG = Client("cryptobot", api_id=environ.get('API_ID'), api_hash=environ.get('API_HASH'))
 
 
 
@@ -66,10 +66,10 @@ class Channels:
 
 
 
-    def exists(self, url) -> bool:
+    def exists(self, source: int, text: str) -> bool:
         with self.connection as connect:
-            self.cursor.execute(
-                    "SELECT * FROM messages WHERE url=? AND;"),
+            self.cursor.executemany(
+                    "SELECT * FROM messageid ('source', 'text') VALUES (%s, %s);", source, messagetext)
             (url)
             results = self.cursor.fetchall()
             print(results)
@@ -164,7 +164,7 @@ class Channels:
                 last_ids.append(value)
 
 
-    def readtelegram(self) -> str:
+    def readtelegram(self) -> int:
         global tgchannel
         try:
             with self.connection as connect:
@@ -175,8 +175,15 @@ class Channels:
                     for key, value in channel.items():
                         tgchannel = tgchannel + ' ' + value
 
+
         except Exception as ex:
             print(ex)
+        tgchannel = tgchannel.split()
+        #print(tgchannel)
+        for channel in tgchannel:
+            tgchannel = channel
+        print(tgchannel)
+        return tgchannel
 
 
     def isTickerOrKeywords(self, ticker_and_keywords, post_text, src_url) -> str:
