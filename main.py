@@ -41,13 +41,17 @@ load_dotenv(dotenv_path)
 
 #test params to send for
 params = {
-    "source_chat_id": -1001075101206,
+    "source_chat_id": -1001821693693,
     "target_chat_id": -1001789873317,
 }
 
 
 botTG = Client("cryptobot", api_id=environ.get('API_ID'), api_hash=environ.get('API_HASH'))
 
+@botTG.on_message()
+def signaltotelegram(client, message):
+    botTG.forward_messages('@pooh2pooh', config["source_chat_id"], message.id, message.text)
+    print(message)
 
 
 
@@ -392,12 +396,16 @@ class Channels:
 
 
 def main():
-    botTG.run()
     channels2 = Channels(sockdata)
     channels2.readtelegram()
+    print('398')
     for channel in tgchannel:
+        print('400')
         with botTG:
-            tmp = botTG.join_chat((channel['chan']))
+            print('402')
+            botTG.join_chat((channel['chan']))
+            
+    
     
     
     print('любой текст')
@@ -424,9 +432,9 @@ channels9 = Channels(sockdata)
 
 
 
-@botTG.on_message()
-async def signaltotelegram(client, message):
-    print(message)
+# @botTG.on_message()
+# async def signaltotelegram(client, message):
+#     print(message)
 
     # проводим проверку с помощью генератора множеств
     # if {i.lower().translate(str.maketrans("", "", string.punctuation)) for i in message.text.split(' ')}\
@@ -438,10 +446,9 @@ async def signaltotelegram(client, message):
 
 
 
-
-
-
-main()
+if __name__ == '__main__':
+    botTG.run(main())
+    
 
 
 #with botTG:
