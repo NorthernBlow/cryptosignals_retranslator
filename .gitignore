@@ -4,3 +4,4 @@ __pycache__/
 admin_panel.sql
 cryptobot.session*
 dump.json
+sandbox.sql

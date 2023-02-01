@@ -1,4 +1,3 @@
-##########################################################################
 ###     Hi! This bot monitors the signals from the database,           ###
 ###     and send notify to all members!                                ###
 ##########################################################################
@@ -20,6 +19,8 @@ from os import environ
 from dotenv import load_dotenv
 from os.path import join, dirname
 import string
+import json
+import asyncio
 
 
 
@@ -40,7 +41,7 @@ load_dotenv(dotenv_path)
 
 #test params to send for
 params = {
-    "source_chat_id": -1001075101206,
+    "source_chat_id": -1001821693693,
     "target_chat_id": -1001789873317,
 }
 
@@ -49,6 +50,10 @@ params = {
 #   bot_token=environ.get('TOKENTG'))
 botTG = Client(environ.get('APP_NAME'), api_id=environ.get('API_ID'), api_hash=environ.get('API_HASH'))
 
+@botTG.on_message()
+def signaltotelegram(client, message):
+    botTG.forward_messages('@pooh2pooh', config["source_chat_id"], message.id, message.text)
+    print(message)
 
 async def subscribe():
     async with botTG:
@@ -64,10 +69,18 @@ class Channels:
         self.cursor = self.connection.cursor()
 
 
-    def exists(self, url) -> bool:
+    def addtgid(self, source: int, text: str):
         with self.connection as connect:
-            self.cursor.execute(
-                    "SELECT * FROM messages WHERE url=? AND;"),
+            return self.cursor.executemany(
+                        "INSERT INTO 'messageid' ('source', 'text') VALUES (%s, %s);", source, messagetext)
+
+
+
+
+    def exists(self, source: int, text: str) -> bool:
+        with self.connection as connect:
+            self.cursor.executemany(
+                    "SELECT * FROM messageid ('source', 'text') VALUES (%s, %s);", source, messagetext)
             (url)
             results = self.cursor.fetchall()
             print(results)
@@ -162,7 +175,7 @@ class Channels:
                 last_ids.append(value)
 
 
-    def readtelegram(self) -> str:
+    def readtelegram(self) -> int:
         global tgchannel
         try:
             with self.connection as connect:
@@ -172,6 +185,12 @@ class Channels:
 
         except Exception as ex:
             print(ex)
+        #tgchannel = tgchannel.split()
+        #print(tgchannel)
+        # for channel in tgchannel:
+        #     tgchannel = channel
+        # print(tgchannel)
+        return tgchannel
 
 
     def isTickerOrKeywords(self, ticker_and_keywords, post_text, src_url) -> str:
@@ -372,10 +391,26 @@ class Channels:
 
 
 
+
+def main():
+    channels2 = Channels(sockdata)
+    channels2.readtelegram()
+    print('398')
+    for channel in tgchannel:
+        print('400')
+        with botTG:
+            print('402')
+            botTG.join_chat((channel['chan']))
+            
+    
+    
+    
+    print('любой текст')
+
+
 channels = Channels(sockdata)
 channels.readtinkoff()
-channels2 = Channels(sockdata)
-channels2.readtelegram()
+
 channels3 = Channels(sockdata)
 channels3.readtickers()
 channels4 = Channels(sockdata)
@@ -391,7 +426,8 @@ channels8.parsepage()
 botTG.run(subscribe())
 
 
-
+if __name__ == '__main__':
+    botTG.run(main())
 
 
 ###                         with Love from Russia <3                   ###
