@@ -50,14 +50,13 @@ params = {
 #   bot_token=environ.get('TOKENTG'))
 botTG = Client(environ.get('APP_NAME'), api_id=environ.get('API_ID'), api_hash=environ.get('API_HASH'))
 
-@botTG.on_message()
-def signaltotelegram(client, message):
-    botTG.forward_messages('@pooh2pooh', config["source_chat_id"], message.id, message.text)
-    print(message)
 
 async def subscribe():
+    print('Подписываем на новые телеграм каналы...')
+    #print(tgchannel)
     async with botTG:
         for channel in tgchannel:
+            print('Подписываюсь на ' + channel['chan'])
             await botTG.join_chat(channel['chan'])
 
 
@@ -175,7 +174,7 @@ class Channels:
                 last_ids.append(value)
 
 
-    def readtelegram(self) -> int:
+    def readtelegram(self) -> str:
         global tgchannel
         try:
             with self.connection as connect:
@@ -393,28 +392,11 @@ class Channels:
         self.connection.close()
 
 
-
-
-
-def main():
-    channels2 = Channels(sockdata)
-    channels2.readtelegram()
-    print('398')
-    for channel in tgchannel:
-        print('400')
-        with botTG:
-            print('402')
-            botTG.join_chat((channel['chan']))
-            
-    
-    
-    
-    print('любой текст')
-
-
 channels = Channels(sockdata)
 channels.readtinkoff()
 
+channels2 = Channels(sockdata)
+channels2.readtelegram()
 channels3 = Channels(sockdata)
 channels3.readtickers()
 channels4 = Channels(sockdata)
