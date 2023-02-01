@@ -23,6 +23,7 @@ import string
 
 
 
+
 #data structures:
 tgchannel: str = ''
 tickers: list = []
@@ -44,17 +45,24 @@ params = {
 }
 
 
-botTG = Client("cryptobot", api_id=environ.get('API_ID'), api_hash=environ.get('API_HASH'),
-   bot_token=environ.get('TOKENTG'))
+#botTG = Client("cryptobot", api_id=environ.get('API_ID'), api_hash=environ.get('API_HASH'),
+#   bot_token=environ.get('TOKENTG'))
+botTG = Client(environ.get('APP_NAME'), api_id=environ.get('API_ID'), api_hash=environ.get('API_HASH'))
 
 
+async def subscribe():
+    async with botTG:
+        for channel in tgchannel:
+            await botTG.join_chat(channel['chan'])
 
 
 class Channels:
 
+
     def __init__(self, database) -> None:
         self.connection = pymysql.connect(**sockdata)
         self.cursor = self.connection.cursor()
+
 
     def exists(self, url) -> bool:
         with self.connection as connect:
@@ -160,10 +168,7 @@ class Channels:
             with self.connection as connect:
                 self.cursor.execute(
                         "SELECT chan FROM channels")
-                results = self.cursor.fetchall()
-                for channel in results:
-                    for key, value in channel.items():
-                        tgchannel = tgchannel + ' ' + value
+                tgchannel = self.cursor.fetchall()
 
         except Exception as ex:
             print(ex)
@@ -223,7 +228,7 @@ class Channels:
                     for word_for_up in wordsup_list:
                         if word_for_up in post_clean_text:
                             signal_action = "повышение"
-                            print("Отправлен сигнал на повышение для " + ticker  + ", триггер: " + str(word_for_up)) 
+                            print("Обнаружен сигнал на повышение для " + ticker  + ", триггер: " + str(word_for_up)) 
 
 
                     # Парсим слова/фразы для сигналов на понижение
@@ -240,7 +245,7 @@ class Channels:
                     for word_for_down in wordsdown_list:
                         if word_for_down in post_clean_text:
                             signal_action = "понижение"
-                            print("Отправлен сигнал на понижение для " + ticker + ", триггер: " + str(word_for_down))
+                            print("Обнаружен сигнал на понижение для " + ticker + ", триггер: " + str(word_for_down))
 
                 else:
                     tmp = set(ticker_and_keywords[ticker]) & set(post_clean_text.split())
@@ -282,11 +287,11 @@ class Channels:
                             if word_for_down in post_clean_text:
                                 signal_action = "понижение"
                                 print("Обнаружен сигнал на понижение для " + ticker + ", триггер: " + str(word_for_down))
-                    else:
-                        print("Совпадений по " + ticker + " нет")
-                        query_sandbox = [(src_url, post_text, "Нет тикеров")]
-                        self.cursor.executemany(
-                                "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
+                    #else:
+                        #print("Совпадений по " + ticker + " нет")
+                        #query_sandbox = [(src_url, post_text, "Нет тикеров")]
+                        #self.cursor.executemany(
+                                #"INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
 
 
             if ticker_count == 1 and len(signal_action) < 3:
@@ -298,13 +303,13 @@ class Channels:
                 with botTG:
                     botTG.send_message(params['target_chat_id'], "Сигнал: " + ticker_name + " " + signal_action)
             elif ticker_count >= 2:
-                print("Найдено 2 и более тикеров в посте!")
+                print("Найдено больше 1 тикера в посте!")
                 query_sandbox = [(src_url, post_text, "Больше 1 тикера")]
                 self.cursor.executemany(
                         "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
 
             else:
-                print("Совпадений по " + ticker + " нет")
+                print("Совпадений по нет")
                 query_sandbox = [(src_url, post_text, "Нет тикеров")]
                 self.cursor.executemany(
                         "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
@@ -381,30 +386,9 @@ channels6 = Channels(sockdata)
 channels6.readwordsdown()
 channels7 = Channels(sockdata)
 channels7.readstopwords()
-
 channels8 = Channels(sockdata)
 channels8.parsepage()
-
-
-#with botTG:
-   #print(botTG.export_session_string())
-
-
-# print(tgchannel)
-# print(url)
-# print(tickers)
-
-
-#подготовить спан кляссе к сравнению.
-# if tickers in span_classe:
-#         print(tickers.strip())
-# Set param for parse page
-
-
-
-
-#if __name__ == "__main__":
-    #
+botTG.run(subscribe())
 
 
 

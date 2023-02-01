@@ -1,7 +1,6 @@
-env/*
-*env/
+env/
+.env*
 __pycache__/
 admin_panel.sql
-cryptobot.session
-.env
+cryptobot.session*
 dump.json

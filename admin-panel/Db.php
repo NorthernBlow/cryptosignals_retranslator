@@ -23,6 +23,26 @@ class Database
         }
     }
 
+    function Auth($login, $password)
+    {
+        try {
+            if (strlen($login) < 3 || strlen($password) < 1) {
+                return false;
+            }
+            $stmt = $this->db->prepare('SELECT * FROM users WHERE username = :login');
+            $stmt->execute(['login' => $login]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!strcmp($password, $user['password'])) {
+                return true;
+            } else {
+                return false;
+            }
+        } catch (PDOException $e) {
+            // print $e for Log here!
+            return false;
+        }
+    }
+
 
     function getUsers()
     {
@@ -46,11 +66,77 @@ class Database
         }
     }
 
+    function getPageByID($id)
+    {
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM pages WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            // print $e for Log here!
+            return false;
+        }
+    }
+
+    function delPageByID($id)
+    {
+        try {
+            $stmt = $this->db->prepare('DELETE FROM pages WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+            return $stmt->fetch();
+        } catch (PDOException $e) {
+            // print $e for Log here!
+            return false;
+        }
+    }
+
+    function updatePageByID($id, $url)
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE pages SET url = :url WHERE id = :id'
+        );
+        $stmt->execute(['id' => $id, 'url' => $url]);
+        return true;
+    }
+
     function getChannels()
     {
         try {
             $stmt = $this->db->query('SELECT * FROM channels ORDER BY id DESC');
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            // print $e for Log here!
+            return false;
+        }
+    }
+
+    function getChannelByID($id)
+    {
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM channels WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            // print $e for Log here!
+            return false;
+        }
+    }
+
+    function updateChannelByID($id, $chan)
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE channels SET chan = :chan WHERE id = :id'
+        );
+        $stmt->execute(['id' => $id, 'chan' => $chan]);
+        return true;
+    }
+
+    function delChannelByID($id)
+    {
+        try {
+            $stmt = $this->db->prepare('DELETE FROM channels WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+            return $stmt->fetch();
         } catch (PDOException $e) {
             // print $e for Log here!
             return false;
@@ -68,11 +154,77 @@ class Database
         }
     }
 
+    function getTickerByID($id)
+    {
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM tickers WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            // print $e for Log here!
+            return false;
+        }
+    }
+
+    function updateTickerByID($id, $ticker, $keywords)
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE tickers SET ticker = :ticker, keywords = :keywords WHERE id = :id'
+        );
+        $stmt->execute(['id' => $id, 'ticker' => $ticker, 'keywords' => $keywords]);
+        return true;
+    }
+
+    function delTickerByID($id)
+    {
+        try {
+            $stmt = $this->db->prepare('DELETE FROM tickers WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+            return $stmt->fetch();
+        } catch (PDOException $e) {
+            // print $e for Log here!
+            return false;
+        }
+    }
+
     function getStopWords()
     {
         try {
             $stmt = $this->db->query('SELECT * FROM stopwords ORDER BY id DESC');
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            // print $e for Log here!
+            return false;
+        }
+    }
+
+    function getStopWordByID($id)
+    {
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM stopwords WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            // print $e for Log here!
+            return false;
+        }
+    }
+
+    function updateStopWordByID($id, $stopword)
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE stopwords SET stopword = :stopword WHERE id = :id'
+        );
+        $stmt->execute(['id' => $id, 'stopword' => $stopword]);
+        return true;
+    }
+
+    function delStopWordByID($id)
+    {
+        try {
+            $stmt = $this->db->prepare('DELETE FROM stopwords WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+            return $stmt->fetch();
         } catch (PDOException $e) {
             // print $e for Log here!
             return false;
@@ -90,11 +242,77 @@ class Database
         }
     }
 
+    function getWordUpByID($id)
+    {
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM wordsup WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            // print $e for Log here!
+            return false;
+        }
+    }
+
+    function updateWordUpByID($id, $word_for_up)
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE wordsup SET word_for_up = :word_for_up WHERE id = :id'
+        );
+        $stmt->execute(['id' => $id, 'word_for_up' => $word_for_up]);
+        return true;
+    }
+
+    function delWordUpByID($id)
+    {
+        try {
+            $stmt = $this->db->prepare('DELETE FROM wordsup WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+            return $stmt->fetch();
+        } catch (PDOException $e) {
+            // print $e for Log here!
+            return false;
+        }
+    }
+
     function getWordsDown()
     {
         try {
             $stmt = $this->db->query('SELECT * FROM wordsdown ORDER BY id DESC');
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            // print $e for Log here!
+            return false;
+        }
+    }
+
+    function getWordDownByID($id)
+    {
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM wordsdown WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            // print $e for Log here!
+            return false;
+        }
+    }
+
+    function updateWordDownByID($id, $word_for_down)
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE wordsdown SET word_for_down = :word_for_down WHERE id = :id'
+        );
+        $stmt->execute(['id' => $id, 'word_for_down' => $word_for_down]);
+        return true;
+    }
+
+    function delWordDownByID($id)
+    {
+        try {
+            $stmt = $this->db->prepare('DELETE FROM wordsdown WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+            return $stmt->fetch();
         } catch (PDOException $e) {
             // print $e for Log here!
             return false;
@@ -112,12 +330,36 @@ class Database
         }
     }
 
+    function getSandboxByID($id)
+    {
+        try {
+            $stmt = $this->db->prepare('SELECT * FROM sandbox WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            // print $e for Log here!
+            return false;
+        }
+    }
+
+    function delSandboxByID($id)
+    {
+        try {
+            $stmt = $this->db->prepare('DELETE FROM sandbox WHERE id = :id');
+            $stmt->execute(['id' => $id]);
+            return $stmt->fetch();
+        } catch (PDOException $e) {
+            // print $e for Log here!
+            return false;
+        }
+    }
+
     function addUser($username, $token)
     {
         $stmt = $this->db->prepare(
-            'INSERT INTO users (username, token) VALUES (:username, :token)'
+            'INSERT INTO users (username, password, token) VALUES (:username, :password, :token)'
         );
-        $stmt->execute(['username' => $username, 'token' => $token]);
+        $stmt->execute(['username' => $username, 'password' => 'pAssw0rd', 'token' => $token]);
         return true;
     }
 
@@ -139,12 +381,12 @@ class Database
         return true;
     }
 
-    function addTicker($ticker)
+    function addTicker($ticker, $keywords = '')
     {
         $stmt = $this->db->prepare(
-            'INSERT INTO tickers (ticker) VALUES (:ticker)'
+            'INSERT INTO tickers (ticker, keywords) VALUES (:ticker, :keywords)'
         );
-        $stmt->execute(['ticker' => $ticker]);
+        $stmt->execute(['ticker' => $ticker, 'keywords' => $keywords]);
         return true;
     }
 
