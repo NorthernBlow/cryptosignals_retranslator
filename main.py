@@ -1,3 +1,4 @@
+##########################################################################
 ###     Hi! This bot monitors the signals from the database,           ###
 ###     and send notify to all members!                                ###
 ##########################################################################
@@ -19,8 +20,7 @@ from os import environ
 from dotenv import load_dotenv
 from os.path import join, dirname
 import string
-import json
-import asyncio
+import validators
 
 
 
@@ -328,7 +328,7 @@ class Channels:
                         "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
 
             else:
-                print("Совпадений по нет")
+                print("Совпадений нет")
                 query_sandbox = [(src_url, post_text, "Нет тикеров")]
                 self.cursor.executemany(
                         "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
@@ -341,8 +341,12 @@ class Channels:
         urls = urls.split()
         query_code = []
 
+
         try:
             for url in urls:
+                if validators.url(url) != True:
+                    print('Skip not valid URL!')
+                    continue
                 with request.urlopen(url) as file:
                     src = file.read()
                     soup = BeautifulSoup(src, "lxml")
@@ -424,10 +428,6 @@ channels7.readstopwords()
 channels8 = Channels(sockdata)
 channels8.parsepage()
 botTG.run(subscribe())
-
-
-if __name__ == '__main__':
-    botTG.run(main())
 
 
 ###                         with Love from Russia <3                   ###
