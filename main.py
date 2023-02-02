@@ -67,6 +67,24 @@ async def send_signal(user_name, ticker, signal_action, count_members = 0):
         else:
             await botTG.send_message(user_name, "Сигнал: " + ticker + " " + signal_action)
 
+def parse_subscribers(url: str) -> int:
+    """Функция для получения числа подписчиков из тинькофф.инвестиций
+    args: url - строковое представление url
+    return: возвращает число подписчиков пульсят по указанному url типа integer
+    """
+    with request.urlopen(url) as file:
+        src = file.read()
+        soup = BeautifulSoup(src, "lxml")
+        subscr_classe = soup.find("div", class_="ProfileInfo__info_cfaff")
+        subscr_div = subscr_classe.find("span", class_="ProfileInfo__socialityNumber_yzn49")
+        
+        subscr_div = subscr_div.text.replace(' ', '') #поудалял пробелы
+        
+        re.sub(r'\D', '', 'subscr_div') # здесь оставляю только строку с цифрами
+        subscr_div = int(subscr_div)    # типа integer 94485
+        # print("это число подписчиков в тинькофф ->", subscr_div) 
+        return subscr_div
+
 
 class Channels:
 
@@ -290,7 +308,7 @@ class Channels:
                 members_list: list = []
                 for user_name in members:
                     for value in user_name.values():
-                        botTG.run(send_signal(value, ticker_name, signal_action))
+                        botTG.run(send_signal(value, ticker_name, signal_action, parse_subscribers(src_url)))
             elif ticker_count >= 2:
                 print("Найдено больше 1 тикера в посте!")
                 query_sandbox = [(src_url, post_text, "Больше 1 тикера")]
