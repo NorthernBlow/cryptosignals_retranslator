@@ -27,13 +27,13 @@
 
       <h1 class="text-center pt-5">Изменить страницу <strong class="text-danger">источник</strong></h1>
 
-      <form action="/dashboard.php?sources&pages" method="post" class="pt-5 px-2">
+      <form action="/dashboard.php?pages" method="post" class="pt-5 px-2">
         <div class="modal-body">
           <input class="form-control mb-2" type="text" placeholder="URL" aria-label=".form-control-lg example" name="url" value="<?=$page['url']?>">
           <input type="hidden" name="source_page_id" value="<?=$page['id']?>">
         </div>
         <div class="modal-footer">
-          <a href="/dashboard.php?sources&pages" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</a>
+          <a href="/dashboard.php?pages" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</a>
           <button type="sumbit" class="btn btn-success">Обновить</button>
         </div>
       </form>
@@ -51,13 +51,13 @@
 
       <h1 class="text-center pt-5">Изменить канал <strong class="text-danger">источник</strong></h1>
 
-      <form action="/dashboard.php?sources&channels" method="post" class="pt-5 px-2">
+      <form action="/dashboard.php?channels" method="post" class="pt-5 px-2">
         <div class="modal-body">
           <input class="form-control mb-2" type="text" placeholder="Username" aria-label=".form-control-lg example" name="chan" value="<?=$channel['chan']?>">
           <input type="hidden" name="sources_channel_id" value="<?=$channel['id']?>">
         </div>
         <div class="modal-footer">
-          <a href="/dashboard.php?sources&channels" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</a>
+          <a href="/dashboard.php?channels" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</a>
           <button type="sumbit" class="btn btn-success">Обновить</button>
         </div>
       </form>
@@ -75,14 +75,20 @@
 
       <h1 class="text-center pt-5">Изменить <strong class="text-danger">тикер</strong></h1>
 
-      <form action="/dashboard.php?settings&tickers" method="post" class="pt-5 px-2">
+      <form action="/dashboard.php?tickers" method="post" class="pt-5 px-2">
         <div class="modal-body">
           <input class="form-control mb-2" type="text" placeholder="Тикер" aria-label=".form-control-lg example" name="ticker" value="<?=$ticker['ticker']?>">
           <input class="form-control mb-2" type="text" placeholder="Ключевые слова" aria-label=".form-control-lg example" name="keywords" value="<?=$ticker['keywords']?>">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="pump" id="flexCheckDefault" value="1" <?=!$ticker['pump'] ? : 'checked'?>>
+            <label class="form-check-label" for="flexCheckDefault">
+              Возможен PUMP
+            </label>
+          </div>
           <input type="hidden" name="settings_ticker_id" value="<?=$ticker['id']?>">
         </div>
         <div class="modal-footer">
-          <a href="/dashboard.php?settings&tickers" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</a>
+          <a href="/dashboard.php?tickers" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</a>
           <button type="sumbit" class="btn btn-success">Обновить</button>
         </div>
       </form>
@@ -100,13 +106,13 @@
 
       <h1 class="text-center pt-5">Изменить <strong class="text-danger">стоп слово</strong></h1>
 
-      <form action="/dashboard.php?settings&stopwords" method="post" class="pt-5 px-2">
+      <form action="/dashboard.php?stopwords" method="post" class="pt-5 px-2">
         <div class="modal-body">
           <input class="form-control mb-2" type="text" placeholder="Стоп слово" aria-label=".form-control-lg example" name="stopword" value="<?=$stopword['stopword']?>">
           <input type="hidden" name="settings_stopword_id" value="<?=$stopword['id']?>">
         </div>
         <div class="modal-footer">
-          <a href="/dashboard.php?settings&stopwords" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</a>
+          <a href="/dashboard.php?stopwords" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</a>
           <button type="sumbit" class="btn btn-success">Обновить</button>
         </div>
       </form>
@@ -126,13 +132,13 @@
 
       <h1 class="text-center pt-5">Изменить <strong class="text-danger">ключ на повышение</strong></h1>
 
-      <form action="/dashboard.php?settings&wordsup" method="post" class="pt-5 px-2">
+      <form action="/dashboard.php?wordsup" method="post" class="pt-5 px-2">
         <div class="modal-body">
           <input class="form-control mb-2" type="text" placeholder="Ключ на повышение" aria-label=".form-control-lg example" name="word_for_up" value="<?=$wordup['word_for_up']?>">
           <input type="hidden" name="settings_wordup_id" value="<?=$wordup['id']?>">
         </div>
         <div class="modal-footer">
-          <a href="/dashboard.php?settings&wordsup" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</a>
+          <a href="/dashboard.php?wordsup" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</a>
           <button type="sumbit" class="btn btn-success">Обновить</button>
         </div>
       </form>
@@ -156,13 +162,13 @@
 
       <h1 class="text-center pt-5">Изменить <strong class="text-danger">ключ на понижение</strong></h1>
 
-      <form action="/dashboard.php?settings&wordsdown" method="post" class="pt-5 px-2">
+      <form action="/dashboard.php?wordsdown" method="post" class="pt-5 px-2">
         <div class="modal-body">
           <input class="form-control mb-2" type="text" placeholder="Ключ на повышение" aria-label=".form-control-lg example" name="word_for_down" value="<?=$worddown['word_for_down']?>">
           <input type="hidden" name="settings_worddown_id" value="<?=$worddown['id']?>">
         </div>
         <div class="modal-footer">
-          <a href="/dashboard.php?settings&wordsdown" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</a>
+          <a href="/dashboard.php?wordsdown" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</a>
           <button type="sumbit" class="btn btn-success">Обновить</button>
         </div>
       </form>

@@ -43,6 +43,40 @@ class Database
         }
     }
 
+    function getSettings()
+    {
+        try {
+            $stmt = $this->db->query('SELECT * FROM settings');
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            // print $e for Log here!
+            return false;
+        }
+    }
+
+    function getMembers()
+    {
+        try {
+            $stmt = $this->db->query('SELECT * FROM members');
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            // print $e for Log here!
+            return false;
+        }
+    }
+
+    function updatePump($pump_for_chan, $pump_for_page)
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE settings SET value = :pump_for_chan WHERE name = :pump_chan'
+        );
+        $stmt->execute(['pump_for_chan' => $pump_for_chan, 'pump_chan' => 'pump_for_chan']);
+        $stmt = $this->db->prepare(
+            'UPDATE settings SET value = :pump_for_page WHERE name = :pump_page'
+        );
+        $stmt->execute(['pump_for_page' => $pump_for_page, 'pump_page' => 'pump_for_page']);
+        return true;
+    }
 
     function getUsers()
     {
@@ -166,12 +200,12 @@ class Database
         }
     }
 
-    function updateTickerByID($id, $ticker, $keywords)
+    function updateTickerByID($id, $ticker, $keywords, $pump = 0)
     {
         $stmt = $this->db->prepare(
-            'UPDATE tickers SET ticker = :ticker, keywords = :keywords WHERE id = :id'
+            'UPDATE tickers SET ticker = :ticker, keywords = :keywords, pump = :pump WHERE id = :id'
         );
-        $stmt->execute(['id' => $id, 'ticker' => $ticker, 'keywords' => $keywords]);
+        $stmt->execute(['id' => $id, 'ticker' => $ticker, 'keywords' => $keywords, 'pump' => $pump]);
         return true;
     }
 

@@ -26,38 +26,46 @@ import validators
 
 
 #data structures:
-tgchannel: str = ''
-tickers: list = []
-urls: str = ''
-last_ids: list = []
-wordsup: list = []
-wordsdown: list = []
-stopwords: list = []
+members:        list = []
+tgchannel:      str = ''
+tickers:        list = []
+tickers_pump:   dict = {}
+urls:           str = ''
+last_ids:       list = []
+wordsup:        list = []
+wordsdown:      list = []
+stopwords:      list = []
+settings:       list = []
+opt:            dict = {}
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
 
 
-#test params to send for
-params = {
-    "source_chat_id": -1001821693693,
-    "target_chat_id": -1001789873317,
-}
 
-
-#botTG = Client("cryptobot", api_id=environ.get('API_ID'), api_hash=environ.get('API_HASH'),
-#   bot_token=environ.get('TOKENTG'))
-botTG = Client(environ.get('APP_NAME'), api_id=environ.get('API_ID'), api_hash=environ.get('API_HASH'))
+botTG = Client('cryptobot_main', api_id=environ.get('API_ID'), api_hash=environ.get('API_HASH'), bot_token=environ.get('TOKENTG'))
+userbotTG = Client('cryptouserbot_main', api_id=environ.get('API_ID'), api_hash=environ.get('API_HASH'))
 
 
 async def subscribe():
     print('Подписываем на новые телеграм каналы...')
     #print(tgchannel)
-    async with botTG:
+    async with userbotTG:
         for channel in tgchannel:
             print('Подписываюсь на ' + channel['chan'])
-            await botTG.join_chat(channel['chan'])
+            await userbotTG.join_chat(channel['chan'])
+
+async def send_signal(user_name, ticker, signal_action, count_members = 0):
+    async with botTG:
+        print('Отправляю сигнал для ' + user_name)
+        if tickers_pump[ticker]:
+            pump_num = count_members // int(opt['pump_for_page'])
+            if pump_num > 10:
+                pump_num = 10
+            await botTG.send_message(user_name, "Сигнал: PUMP " + str(pump_num) + " из 10. " + ticker + " " + signal_action)
+        else:
+            await botTG.send_message(user_name, "Сигнал: " + ticker + " " + signal_action)
 
 
 class Channels:
@@ -66,24 +74,6 @@ class Channels:
     def __init__(self, database) -> None:
         self.connection = pymysql.connect(**sockdata)
         self.cursor = self.connection.cursor()
-
-
-    def addtgid(self, source: int, text: str):
-        with self.connection as connect:
-            return self.cursor.executemany(
-                        "INSERT INTO 'messageid' ('source', 'text') VALUES (%s, %s);", source, messagetext)
-
-
-
-
-    def exists(self, source: int, text: str) -> bool:
-        with self.connection as connect:
-            self.cursor.executemany(
-                    "SELECT * FROM messageid ('source', 'text') VALUES (%s, %s);", source, messagetext)
-            (url)
-            results = self.cursor.fetchall()
-            print(results)
-            return bool(len(results))
 
 
     def readtickers(self) -> str:
@@ -95,7 +85,7 @@ class Channels:
         try:
             with self.connection as connect:
                 self.cursor.execute(
-                        "SELECT ticker,keywords FROM tickers")
+                        "SELECT ticker,keywords,pump FROM tickers")
                 tickers = self.cursor.fetchall()
         except Exception as ex:
             print(ex)
@@ -181,21 +171,37 @@ class Channels:
                 self.cursor.execute(
                         "SELECT chan FROM channels")
                 tgchannel = self.cursor.fetchall()
-
         except Exception as ex:
             print(ex)
-        #tgchannel = tgchannel.split()
-        #print(tgchannel)
-        # for channel in tgchannel:
-        #     tgchannel = channel
-        # print(tgchannel)
+
         return tgchannel
+
+    def readmembers(self) -> str:
+        global members
+        try:
+            with self.connection as connect:
+                self.cursor.execute(
+                        "SELECT user_name FROM members")
+                members = self.cursor.fetchall()
+        except Exception as ex:
+            print(ex)
+
+        return members
+
+    def readsettings(self) -> str:
+        global settings
+        try:
+            with self.connection as connect:
+                self.cursor.execute(
+                        "SELECT * FROM settings")
+                settings = self.cursor.fetchall()
+        except Exception as ex:
+            print(ex)
+        return settings
 
 
     def isTickerOrKeywords(self, ticker_and_keywords, post_text, src_url) -> str:
-        #print(ticker_and_keywords)
-        #print(post_text.split())
-        
+
         # Удаляем ВСЕ символы из текста поста,
         # для корректного сравнения.
         # Оригинальный пост сохраняется в post_text
@@ -211,6 +217,15 @@ class Channels:
                 stopwords_list = stopwords_list + value.split(',')
         stopwords_list = map(str.lower, stopwords_list)
 
+        for ticker in tickers:
+            if ticker['pump']:
+                tickers_pump[ticker['ticker']] = 1
+            else:
+                tickers_pump[ticker['ticker']] = 0
+
+        for pump in settings:
+            opt[pump['name']] = pump['value']
+
         # Парсим стоп слова в тесте поста
         #
         sandbox = set(stopwords_list) & set(post_clean_text.split())
@@ -221,17 +236,16 @@ class Channels:
             self.cursor.executemany(
                     "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
         else:
-
             ticker_name: str = ""
             ticker_count: int = 0
             signal_action: str = ""
             for ticker in ticker_and_keywords:
 
-                if ticker in post_clean_text:
-                    print("Найден тикер " + ticker)
+                if ticker.lower() in post_clean_text or set(ticker_and_keywords[ticker]) & set(post_clean_text.split()):
+                    print("Найден тикер " + ticker + ", парсим пост.")
                     ticker_name = ticker
                     ticker_count += 1
-                
+
                     # Парсим слова/фразы для сигналов на повышение
                     # Делаем из словаря список
                     #
@@ -265,52 +279,6 @@ class Channels:
                             signal_action = "понижение"
                             print("Обнаружен сигнал на понижение для " + ticker + ", триггер: " + str(word_for_down))
 
-                else:
-                    tmp = set(ticker_and_keywords[ticker]) & set(post_clean_text.split())
-
-                    if tmp:
-                        print("Найдены совпадения по " + ticker + ", парсим пост. " + str(tmp))
-                        ticker_name = ticker
-                        ticker_count += 1
-                
-                        # Парсим слова/фразы для сигналов на повышение
-                        # Делаем из словаря список
-                        #
-                        wordsup_list: list = []
-                        for word_for_up in wordsup:
-                            for value in word_for_up.values():
-                                wordsup_list = wordsup_list + value.split(',')
-                        wordsup_list = map(str.lower, wordsup_list)
-
-                        # Такой способ ищет слова и фразы в тесте поста
-                        #
-                        for word_for_up in wordsup_list:
-                            if word_for_up in post_clean_text:
-                                signal_action = "повышение"
-                                print("Обнаружен сигнал на повышение для " + ticker  + ", триггер: " + str(word_for_up)) 
-
-
-                        # Парсим слова/фразы для сигналов на понижение
-                        # Делаем из словаря список
-                        #
-                        wordsdown_list: list = []
-                        for word_for_down in wordsdown:
-                            for value in word_for_down.values():
-                                wordsdown_list = wordsdown_list + value.split(',')
-                        wordsdown_list = map(str.lower, wordsdown_list)
-
-                        # Такой способ ищет слова и фразы в тесте поста
-                        #
-                        for word_for_down in wordsdown_list:
-                            if word_for_down in post_clean_text:
-                                signal_action = "понижение"
-                                print("Обнаружен сигнал на понижение для " + ticker + ", триггер: " + str(word_for_down))
-                    #else:
-                        #print("Совпадений по " + ticker + " нет")
-                        #query_sandbox = [(src_url, post_text, "Нет тикеров")]
-                        #self.cursor.executemany(
-                                #"INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
-
 
             if ticker_count == 1 and len(signal_action) < 3:
                 print("Маркеров для сигнала не найдено. " + ticker)
@@ -318,14 +286,16 @@ class Channels:
                 self.cursor.executemany(
                         "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
             elif ticker_count == 1:
-                with botTG:
-                    botTG.send_message(params['target_chat_id'], "Сигнал: " + ticker_name + " " + signal_action)
+                print('ОТПРАВЛЯЮ СИГНАЛ!')
+                members_list: list = []
+                for user_name in members:
+                    for value in user_name.values():
+                        botTG.run(send_signal(value, ticker_name, signal_action))
             elif ticker_count >= 2:
                 print("Найдено больше 1 тикера в посте!")
                 query_sandbox = [(src_url, post_text, "Больше 1 тикера")]
                 self.cursor.executemany(
                         "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
-
             else:
                 print("Совпадений нет")
                 query_sandbox = [(src_url, post_text, "Нет тикеров")]
@@ -384,8 +354,7 @@ class Channels:
                 connect.commit()
 
         except Exception as ex:
-            print("parsepage func:")
-            print(ex)
+            print("parsepage func:", ex)
 
 
     def close(self):
@@ -394,7 +363,10 @@ class Channels:
 
 channels = Channels(sockdata)
 channels.readtinkoff()
-
+channels0 = Channels(sockdata)
+channels0.readsettings()
+channels1 = Channels(sockdata)
+channels1.readmembers()
 channels2 = Channels(sockdata)
 channels2.readtelegram()
 channels3 = Channels(sockdata)
@@ -409,7 +381,7 @@ channels7 = Channels(sockdata)
 channels7.readstopwords()
 channels8 = Channels(sockdata)
 channels8.parsepage()
-botTG.run(subscribe())
+userbotTG.run(subscribe())
 
 
 ###                         with Love from Russia <3                   ###

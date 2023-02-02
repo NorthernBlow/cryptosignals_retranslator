@@ -68,7 +68,7 @@ class Receiver {
 		if(!empty($content)){
 			$this->raw = $content;
 			$this->data = json_decode($content, TRUE);
-			$this->id = $this->data['update_id'];
+			$this->id = @$this->data['update_id'];
 			if(isset($this->data['message']) or isset($this->data['edited_message'])){
 				$this->key = (isset($this->data['edited_message']) ? "edited_message" : "message");
 				if($this->key == "edited_message"){

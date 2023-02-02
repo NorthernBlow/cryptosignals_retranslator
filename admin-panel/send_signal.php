@@ -40,7 +40,7 @@
     <p class="badge bg-dark"><?=$sandbox['src']?></p>
   </div>
 
-  <form action="/dashboard.php" method="POST" class="pt-5 px-5">
+  <form action="/dashboard.php?sandbox" method="POST" class="pt-5 px-5">
     <fieldset>
       <input name="sandbox_id" value="<?=$_GET['sandbox_id']?>" type="hidden">
       <div class="mb-3">

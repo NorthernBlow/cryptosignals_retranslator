@@ -2,6 +2,7 @@ env/
 .env*
 __pycache__/
 admin_panel.sql
-cryptobot.session*
+token.php
+*.session*
 dump.json
 sandbox.sql
