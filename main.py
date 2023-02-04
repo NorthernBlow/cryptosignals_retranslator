@@ -37,6 +37,7 @@ wordsdown:      list = []
 stopwords:      list = []
 settings:       list = []
 opt:            dict = {}
+posts:          list = []
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
@@ -92,6 +93,19 @@ class Channels:
     def __init__(self, database) -> None:
         self.connection = pymysql.connect(**sockdata)
         self.cursor = self.connection.cursor()
+
+
+    def readposts(self) -> str:
+        # Все посты, для исключчения дублей с раными post_id
+        #
+        global posts
+        try:
+            with self.connection as connect:
+                self.cursor.execute(
+                        "SELECT post FROM sandbox")
+                posts = self.cursor.fetchall()
+        except Exception as ex:
+            print(ex)
 
 
     def readtickers(self) -> str:
@@ -225,7 +239,7 @@ class Channels:
         # Оригинальный пост сохраняется в post_text
         #
         chars = re.escape(string.punctuation)
-        post_clean_text = re.sub(r'['+chars+']', '', post_text)
+        post_clean_text = re.sub(r'['+chars+']', '', post_text.lower())
 
         # Делаем из словаря список
         #
@@ -246,11 +260,11 @@ class Channels:
 
         # Парсим стоп слова в тесте поста
         #
-        sandbox = set(stopwords_list) & set(post_clean_text.split())
+        sandbox = list(set(stopwords_list) & set(post_clean_text.split()))
         if sandbox:
-            print("В песочницу! Стоп слово: " + str(sandbox))
+            print("В песочницу! Стоп слово: " + sandbox[0])
             # Тут мы записываем пост в базу
-            query_sandbox = [(src_url, post_text, "Стоп слово " + str(sandbox))]
+            query_sandbox = [(src_url, post_text, "Стоп слово " + sandbox[0])]
             self.cursor.executemany(
                     "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
         else:
@@ -315,7 +329,7 @@ class Channels:
                 self.cursor.executemany(
                         "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
             else:
-                print("Совпадений нет")
+                print("Совпадений по тикерам нет. В песочницу")
                 query_sandbox = [(src_url, post_text, "Нет тикеров")]
                 self.cursor.executemany(
                         "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
@@ -346,19 +360,32 @@ class Channels:
                     # Пропускаем пост, если он уже отправлялся
                     #print(post_id, '-это пост айди')
                     #print(last_ids, '-это ласт айди')
-
                     
+
                     match str(post_id).strip('[]') in str(last_ids).strip('[]'):
                         case True:
                             print('Не отправляем пост', post_id) # Если пост уже отправлялся ранее
                             
                         case False:
-                            ticker_and_keywords: dict = {}
-                            for ticker in tickers:
-                                ticker_and_keywords[ticker['ticker']] = ticker['keywords'].split(',')
 
-                            #ticker_and_keywords = map(str.lower, ticker_and_keywords) # Переводит список тикеров из базы в нижний регистр
-                            self.isTickerOrKeywords(ticker_and_keywords, post_div.text.lower(), url) # Отправляет текст поста в нижнем регистре в функцию парсинга поста на тикеры и ключи
+                            posts_list: list = []
+                            duplicate_post: bool = False
+                            print('Проверяю пост на существование дублей...')
+                            for post in posts:
+                                if duplicate_post:
+                                    break
+                                df1 = post['post'].splitlines()
+                                df2 = post_div.text.splitlines()
+                                result = set(df1) & set(df2)
+                                if result:
+                                    duplicate_post = True
+                                    print('Такой пост уже есть в песочнице.')
+                            if duplicate_post != True:
+                                ticker_and_keywords: dict = {}
+                                for ticker in tickers:
+                                    ticker_and_keywords[ticker['ticker']] = ticker['keywords'].split(',')
+
+                                self.isTickerOrKeywords(ticker_and_keywords, post_div.text, url) # Отправляет текст поста в нижнем регистре в функцию парсинга поста на тикеры и ключи
 
 
                     # Записываем ID последнего отправленного поста, из URL источника
@@ -379,6 +406,8 @@ class Channels:
         self.connection.close()
 
 
+channels9 = Channels(sockdata)
+channels9.readposts()
 channels = Channels(sockdata)
 channels.readtinkoff()
 channels0 = Channels(sockdata)

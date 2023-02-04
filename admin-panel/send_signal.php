@@ -25,11 +25,7 @@
   ?>
 
   <!-- Главное меню (navbar) -->
-  <ul class="nav nav-tabs pt-3 nav-fill" id="myTab" role="tablist">
-    <li class="nav-item" role="presentation">
-      <a class="nav-link" href="/dashboard.php?sandbox">← Назад</a>
-    </li>
-  </ul>
+  <a class="nav-link w-100 text-center p-5" href="/dashboard.php?sandbox">← Назад</a>
 
   <h1 class="text-center">Отправить или удалить сигнал</h1>
 

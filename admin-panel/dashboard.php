@@ -30,6 +30,43 @@
 
 		$members = $db->getMembers();
 
+		function passed(
+        \DateTime $date,
+        $time_format = 'H:i',
+        $month_format = 'd M в H:i',
+        $year_format = 'M Y H:i'
+    ) {
+        // $month_format = datefmt_create( 'ru_RU' ,IntlDateFormatter::FULL, IntlDateFormatter::FULL,
+        //                                                                 'Europe/Moscow', IntlDateFormatter::GREGORIAN, 'd LLL в k:mm' );
+        // $year_format = datefmt_create( 'ru_RU' ,IntlDateFormatter::FULL, IntlDateFormatter::FULL,
+        //                                                                 'Europe/Moscow', IntlDateFormatter::GREGORIAN, 'd LLL yyyy в k:mm' );
+
+        $today = new \DateTime('now', $date->getTimezone());
+        $yesterday = new \DateTime('-1 day', $date->getTimezone());
+        $tomorrow = new \DateTime('+1 day', $date->getTimezone());
+        $minutes_ago = round(($today->format('U') - $date->format('U')) / 60);
+        $minutes_in = round(($date->format('U') - $today->format('U')) / 60);
+
+        if ($minutes_ago > 0 && $minutes_ago < 60) {
+            return sprintf('%s минут назад', $minutes_ago);
+        } elseif ($minutes_in > 0 && $minutes_in < 60) {
+            return sprintf('Через %s минут', $minutes_in);
+        } elseif ($today->format('ymd') == $date->format('ymd')) {
+            return sprintf('Сегодня в %s', $date->format($time_format));
+        } elseif ($yesterday->format('ymd') == $date->format('ymd')) {
+            return sprintf('Вчера в %s', $date->format($time_format));
+        } elseif ($tomorrow->format('ymd') == $date->format('ymd')) {
+            return sprintf('Завтра в %s', $date->format($time_format));
+        } elseif ($today->format('Y') == $date->format('Y')) {
+            return $date->format($month_format);
+        } // return datefmt_format($month_format, $date);
+        else {
+            return $date->format($year_format);
+        }
+        // return datedmt_format($year_format);
+    }
+
+
 
 		if (isset($_POST)) {
 			if (isset($_POST['username']) && $_POST['token']) {
@@ -96,6 +133,15 @@
 						->send();
 				}
 				$db->delSandboxByID($_POST['sandbox_id']);
+			} else if (isset($_POST['sender_message'])) {
+				// SENDER MESSAGE
+				foreach ($members as $member) {
+					$tg->send
+					  ->chat($member['user_id'])
+					  ->text($_POST['sender_message'])
+						->send();
+				}
+				$success_sender = true;
 			} else if (isset($_GET['delete_sandbox'])) {
 				// DELETE FROM SANDBOX
 				$db->delSandboxByID($_GET['delete_sandbox']);
@@ -134,9 +180,12 @@
 
 	<button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling">Меню</button>
 
+
 	<div class="offcanvas offcanvas-start" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasScrolling" aria-labelledby="offcanvasScrollingLabel">
 	  <div class="offcanvas-header">
-	    <h5 class="offcanvas-title" id="offcanvasScrollingLabel text-white">with Love from Russia</h5>
+	    <h5 class="offcanvas-title" id="offcanvasScrollingLabel text-white">with <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="red" class="bi bi-heart-fill" viewBox="0 0 16 16">
+			  <path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z"/>
+			</svg> from Russia</h5>
 	    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
 	  </div>
 	  <div class="offcanvas-body text-white">
@@ -148,7 +197,7 @@
 			    	<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-people mx-2" viewBox="0 0 16 16">
 						  <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1h8Zm-7.978-1A.261.261 0 0 1 7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002a.274.274 0 0 1-.014.002H7.022ZM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM6.936 9.28a5.88 5.88 0 0 0-1.23-.247A7.35 7.35 0 0 0 5 9c-4 0-5 3-5 4 0 .667.333 1 1 1h4.216A2.238 2.238 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816ZM4.92 10A5.493 5.493 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275ZM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0Zm3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/>
 						</svg>
-						Пользователи</button>
+						Промо коды</button>
 			  </li>
 			  <!-- СТРАНИЦЫ -->
 			  <li class="nav-item" role="presentation">
@@ -225,6 +274,14 @@
 					  <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
 					</svg>Песочница</button>
 			  </li>
+			  <!-- ФОРМА РАССЫЛКИ -->
+			  <li class="nav-item" role="presentation">
+			    <button class="nav-link <?=isset($_GET['sender']) ? 'active' : '' ?>" id="sender-tab" data-bs-toggle="tab" data-bs-target="#sender-tab-pane" type="button" role="tab" aria-controls="sender-tab-pane" aria-selected="false">
+			    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-send ms-2 me-1" viewBox="0 0 16 16">
+					  <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07Zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493Z"/>
+					</svg>
+					</svg>Рассылка</button>
+			  </li>
 			</ul>
 
 	  </div>
@@ -246,7 +303,7 @@
 	  	<table class="table table-striped table-hover">
 		    <thead class="bg-primary text-white">
 		      <tr>
-		        <th scope="col">#</th>
+		        <th scope="col" class="d-none">#</th>
 		        <th scope="col">Имя</th>
 		        <th scope="col">Промо-код</th>
 		        <th scope="col">Дата приглашения</th>
@@ -258,7 +315,7 @@
 		    		if ($users) {
     					foreach ($users as $user) {
     						echo '<tr>';
-    						echo "<th>$user[id]</th>";
+    						echo "<th class='d-none'>$user[id]</th>";
     						echo "<td>$user[username]</td>";
     						echo "<td>$user[token]</td>";
     						echo "<td>$user[date]</td>";
@@ -282,7 +339,7 @@
 	  	<table class="table table-striped table-hover">
 		    <thead class="bg-primary text-white">
 		      <tr>
-		        <th scope="col">#</th>
+		        <th scope="col" class="d-none">#</th>
 		        <th scope="col"></th>
 		        <th scope="col">URL</th>
 		      </tr>
@@ -294,7 +351,7 @@
     					foreach ($pages as $page) { ?>
     						<tr>
 						<?php
-    						echo "<th>$page[id]</th>";
+    						echo "<th class='d-none'>$page[id]</th>";
     						echo '<td><a href="?sources&pages&delete_page=' . $page['id'] . '" class="btn btn-danger">
     							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
 									  <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
@@ -322,7 +379,7 @@
 	  	<table class="table table-striped table-hover">
 		    <thead class="bg-primary text-white">
 		      <tr>
-		        <th scope="col">#</th>
+		        <th scope="col" class="d-none">#</th>
 		        <th scope="col"></th>
 		        <th scope="col">Username</th>
 		      </tr>
@@ -334,7 +391,7 @@
     					foreach ($channels as $channel) { ?>
     						<tr>
 						<?php
-    						echo "<th>$channel[id]</th>";
+    						echo "<th class='d-none'>$channel[id]</th>";
     						echo '<td><a href="?sources&channels&delete_channel=' . $channel['id'] . '" class="btn btn-danger">
     							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
 									  <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
@@ -363,7 +420,7 @@
 	  	<table class="table table-striped table-hover">
 		    <thead class="bg-primary text-white">
 		      <tr>
-		        <th scope="col">#</th>
+		        <th scope="col" class="d-none">#</th>
 		        <th scope="col"></th>
 		        <th scope="col">Тикер</th>
 		        <th scope="col">Ключевые слова</th>
@@ -377,8 +434,8 @@
     					foreach ($tickers as $ticker) { ?>
     						<tr>
     						<?php
-    						echo "<th>$ticker[id]</th>";
-    						echo '<td><a href="?settings&tickers&delete_ticker=' . $ticker['id'] . '" class="btn btn-danger">
+    						echo "<th class='d-none'>$ticker[id]</th>";
+    						echo '<td><a href="?tickers&delete_ticker=' . $ticker['id'] . '" class="btn btn-danger">
     							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
 									  <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
 									  <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
@@ -407,7 +464,7 @@
 	  	<table class="table table-striped table-hover">
 		    <thead class="bg-primary text-white">
 		      <tr>
-		        <th scope="col">#</th>
+		        <th scope="col" class="d-none">#</th>
 		        <th scope="col"></th>
 		        <th scope="col">Стоп слово</th>
 		      </tr>
@@ -419,8 +476,8 @@
     					foreach ($stopwords as $stopword) { ?>
     						<tr>
     						<?php
-    						echo "<th>$stopword[id]</th>";
-    						echo '<td><a href="?settings&stopwords&delete_stopword=' . $stopword['id'] . '" class="btn btn-danger">
+    						echo "<th class='d-none'>$stopword[id]</th>";
+    						echo '<td><a href="?stopwords&delete_stopword=' . $stopword['id'] . '" class="btn btn-danger">
     							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
 									  <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
 									  <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
@@ -447,7 +504,7 @@
 	  	<table class="table table-striped table-hover">
 		    <thead class="bg-primary text-white">
 		      <tr>
-		        <th scope="col">#</th>
+		        <th scope="col" class="d-none">#</th>
 		        <th scope="col"></th>
 		        <th scope="col">Слова</th>
 		      </tr>
@@ -459,8 +516,8 @@
     					foreach ($wordsup as $word_for_up) { ?>
     						<tr>
     						<?php
-    						echo "<th>$word_for_up[id]</th>";
-    						echo '<td><a href="?settings&wordsup&delete_wordup=' . $word_for_up['id'] . '" class="btn btn-danger">
+    						echo "<th class='d-none'>$word_for_up[id]</th>";
+    						echo '<td><a href="?wordsup&delete_wordup=' . $word_for_up['id'] . '" class="btn btn-danger">
     							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
 									  <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
 									  <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
@@ -487,7 +544,7 @@
 	  	<table class="table table-striped table-hover">
 		    <thead class="bg-primary text-white">
 		      <tr>
-		        <th scope="col">#</th>
+		        <th scope="col" class="d-none">#</th>
 		        <th scope="col"></th>
 		        <th scope="col">Слова</th>
 		      </tr>
@@ -499,8 +556,8 @@
     					foreach ($wordsdown as $word_for_down) { ?>
     						<tr>
     						<?php
-    						echo "<th>$word_for_down[id]</th>";
-    						echo '<td><a href="?settings&wordsdown&delete_worddown=' . $word_for_down['id'] . '" class="btn btn-danger">
+    						echo "<th class='d-none'>$word_for_down[id]</th>";
+    						echo '<td><a href="?wordsdown&delete_worddown=' . $word_for_down['id'] . '" class="btn btn-danger">
     							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
 									  <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
 									  <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
@@ -531,9 +588,9 @@
 	  	<table class="table table-striped table-hover">
 		    <thead class="bg-primary text-white">
 		      <tr>
-		        <th scope="col">#</th>
-		        <th scope="col">Дата</th>
-		        <th scope="col">Источник</th>
+		        <th scope="col" class="d-none">#</th>
+		        <th scope="col" class="d-none d-md-table-cell">Дата</th>
+		        <th scope="col" class="d-none d-md-table-cell">Источник</th>
 		        <th scope="col">Пост</th>
 		        <th scope="col">Причина</th>
 		      </tr>
@@ -545,22 +602,38 @@
 	  					foreach ($sandbox as $sb) {
 
 	  						$reason = "'/send_signal.php?sandbox_id=$sb[id]'";
+	  						$timestamp = new DateTime($sb['date'], new DateTimeZone('Europe/Moscow'));
+
+	  						if (!filter_var($sb['src'], FILTER_VALIDATE_URL) === false) {
+	  							$go_to_sources = '/dashboard.php?pages';
+	  						} else {
+	  							$go_to_sources = '/dashboard.php?channels';
+	  						}
 	  							
 
 	  			?>
-	  						<tr onclick="window.location.href=<?=$reason?>; return false">
-	  					<?php
-	  						echo "<th>$sb[id]</th>";
-	  						echo "<td>$sb[date]</td>";
-	  						echo "<td>$sb[src]</td>";
-	  						echo "<td>$sb[post]</td>";
-	  						echo "<td><span class='badge bg-danger'>$sb[reason]</span></td>";
-	  						echo '</tr>';
+	  						<tr>
+		  						<th class="d-none" onclick="window.location.href=<?=$reason?>; return false" ><?=$sb['id']?></th>
+		  						<td class="d-none d-md-table-cell text-nowrap" onclick="window.location.href=<?=$reason?>; return false"><?=passed($timestamp)?></td>
+		  						<td class="d-none d-md-table-cell overflow-hidden"><a href="<?=$go_to_sources?>"><?=$sb['src']?></a></td>
+		  						<td onclick="window.location.href=<?=$reason?>; return false"><?=mb_strimwidth($sb['post'], 0, 96, '')?>…</td>
+		  						<td onclick="window.location.href=<?=$reason?>; return false"><span class='badge bg-danger'><?=$sb['reason']?></span></td>
+	  						</tr>
+	  			<?php
 	  					}
 	  				}
 	  			?>
 		    </tbody>
 		  </table>
+	  </div>
+
+	  <!-- Рассылка -->
+	  <div class="tab-pane fade <?=isset($_GET['sender']) ? 'show active' : '' ?>" id="sender-tab-pane" role="tabpanel" aria-labelledby="sandbox-tab" tabindex="0">
+	  	<?php if (isset($success_sender)) "<p class='alert alert-success m-2'>Рассылка отправлена!</p>";?>
+	  	<form action="/dashboard.php?sender" method="post" class="m-xl-5 m-2">
+	  		<textarea class="form-control" placeholder="Введите сообщение для рассылки" rows="15" name="sender_message"></textarea>
+        <button type="sumbit" class="btn btn-success">Отправить</button>
+      </form>
 	  </div>
 
 	</div>
@@ -640,7 +713,7 @@
 	        <h1 class="modal-title fs-5" id="exampleModalLabel">Новый тикер для парсинга</h1>
 	        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 	      </div>
-	      <form action="/dashboard.php?settings&tickers" method="post">
+	      <form action="/dashboard.php?tickers" method="post">
 	      	<div class="modal-body">
 	        	<input class="form-control mb-2" type="text" placeholder="Тикер" aria-label=".form-control-lg example" name="ticker">
 	        	<input class="form-control mb-2" type="text" placeholder="Ключевые слова" aria-label=".form-control-lg example" name="keywords">
@@ -668,7 +741,7 @@
 	        <h1 class="modal-title fs-5" id="exampleModalLabel">Новое стоп-слово</h1>
 	        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 	      </div>
-	      <form action="/dashboard.php?settings&stopwords" method="post">
+	      <form action="/dashboard.php?stopwords" method="post">
 	      	<div class="modal-body">
 	        	<input class="form-control mb-2" type="text" placeholder="Стоп слово" aria-label=".form-control-lg example" name="stopword">
 	      	</div>
@@ -689,7 +762,7 @@
 	        <h1 class="modal-title fs-5" id="exampleModalLabel">Новое слово (повышение)</h1>
 	        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 	      </div>
-	      <form action="/dashboard.php?settings&wordsup" method="post">
+	      <form action="/dashboard.php?wordsup" method="post">
 	      	<div class="modal-body">
 	        	<input class="form-control mb-2" type="text" placeholder="Слово или фраза" aria-label=".form-control-lg example" name="word_for_up">
 	      	</div>
@@ -710,7 +783,7 @@
 	        <h1 class="modal-title fs-5" id="exampleModalLabel">Новое слово (понижение)</h1>
 	        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 	      </div>
-	      <form action="/dashboard.php?settings&wordsdown" method="post">
+	      <form action="/dashboard.php?wordsdown" method="post">
 	      	<div class="modal-body">
 	        	<input class="form-control mb-2" type="text" placeholder="Слово или фраза" aria-label=".form-control-lg example" name="word_for_down">
 	      	</div>

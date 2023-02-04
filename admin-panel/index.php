@@ -1,4 +1,4 @@
-<?php session_start(); ?>
+<?php session_start(); if (isset($_SESSION['AUTH'])) header("Location: /dashboard.php");?>
 <!DOCTYPE html>
 <html lang="ru">
 <head>

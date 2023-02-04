@@ -68,6 +68,8 @@ async def listen(client, message):
         for ticker in tickers:
             if ticker['pump']:
                 tickers_pump[ticker['ticker']] = 1
+            else:
+                tickers_pump[ticker['ticker']] = 0
 
         for pump in settings:
             opt[pump['name']] = pump['value']
@@ -104,7 +106,7 @@ async def listen(client, message):
     sandbox = set(stopwords_list) & set(post_clean_text.split())
     if sandbox:
         print('В песочницу! Стоп слово: ' + str(sandbox))
-        query_sandbox = [('telegram', message.text, 'Стоп слово: ' + str(sandbox))]
+        query_sandbox = [(message.sender_chat.username, message.text, 'Стоп слово: ' + str(sandbox))]
         connection = pymysql.connect(**sockdata)
         cursor = connection.cursor()
         with connection as connect:
