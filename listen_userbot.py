@@ -103,10 +103,10 @@ async def listen(client, message):
     print('Data updated.')
 
     post_clean_text = re.sub(r'['+chars+']', '', str(message.text).lower())
-    sandbox = set(stopwords_list) & set(post_clean_text.split())
+    sandbox = list(set(stopwords_list) & set(post_clean_text.split()))
     if sandbox:
-        print('В песочницу! Стоп слово: ' + str(sandbox))
-        query_sandbox = [(message.sender_chat.username, message.text, 'Стоп слово: ' + str(sandbox))]
+        print('В песочницу! Стоп слово: ' + sandbox[0])
+        query_sandbox = [(message.sender_chat.username, message.text, 'Стоп слово: ' + sandbox[0])]
         connection = pymysql.connect(**sockdata)
         cursor = connection.cursor()
         with connection as connect:
@@ -178,7 +178,7 @@ async def listen(client, message):
                     "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
                 connect.commit()
         else:
-            print('Совпадений нет. В песочницу')
+            print('Совпадений по тикерам нет. В песочницу')
             if message.text is not None:
                 query_sandbox = [(message.sender_chat.username, message.text, 'Нет тикеров')]
                 connection = pymysql.connect(**sockdata)

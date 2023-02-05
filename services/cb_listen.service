@@ -1,0 +1,12 @@
+[Unit]
+Description=cryptobot
+After=network.target
+
+[Service]
+User=pooh
+Group=pooh
+WorkingDirectory=/home/pooh/cryptobot
+Environment="PATH=/home/pooh/cryptobot/env/bin"
+ExecStart=/home/pooh/cryptobot/env/bin/python listen_userbot.py
+TimeoutSec=30
+Restart=always

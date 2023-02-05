@@ -1,0 +1,6 @@
+[Unit]
+Description=cryptobot
+
+[Timer]
+OnBootSec=15m
+OnUnitActiveSec=5m
