@@ -31,7 +31,7 @@
 
 
   <div class="p-1">
-    <p class="lead"><?=$sandbox['post']?></p>
+    <p class="lead"><pre style="white-space: pre-wrap;white-space: -moz-pre-wrap;white-space: -pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;"><?=$sandbox['post']?></pre></p>
     <p class="badge bg-danger"><?=$sandbox['reason']?></p>
     <p class="badge bg-dark"><?=$sandbox['src']?></p>
   </div>

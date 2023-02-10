@@ -43,6 +43,16 @@ class Database
         }
     }
 
+    function deleteForTest()
+    {
+        $stmt = $this->db->query(
+            'UPDATE pages SET last_post_id = "";'
+        );
+        $stmt = $this->db->query(
+            'DELETE FROM sandbox'
+        );
+    }
+
     function getSettings()
     {
         try {
@@ -58,6 +68,17 @@ class Database
     {
         try {
             $stmt = $this->db->query('SELECT * FROM members');
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            // print $e for Log here!
+            return false;
+        }
+    }
+
+    function getTokens()
+    {
+        try {
+            $stmt = $this->db->query('SELECT * FROM tokens');
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             // print $e for Log here!
@@ -388,12 +409,21 @@ class Database
         }
     }
 
-    function addUser($username, $token)
+    function addUser($username, $password)
     {
         $stmt = $this->db->prepare(
-            'INSERT INTO users (username, password, token) VALUES (:username, :password, :token)'
+            'INSERT INTO users (username, password) VALUES (:username, :password)'
         );
-        $stmt->execute(['username' => $username, 'password' => 'pAssw0rd', 'token' => $token]);
+        $stmt->execute(['username' => $username, 'password' => $password]);
+        return true;
+    }
+
+    function addToken($token, $activation_num, $lost_date)
+    {
+        $stmt = $this->db->prepare(
+            'INSERT INTO tokens (token, activation_num, lost_date) VALUES (:token, :activation_num, :lost_date)'
+        );
+        $stmt->execute(['token' => $token, 'activation_num' => $activation_num, 'lost_date' => $lost_date]);
         return true;
     }
 

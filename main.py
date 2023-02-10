@@ -19,20 +19,24 @@ import lxml
 from urllib import request
 import pymysql
 from config import sockdata
+from config import bcolors
 import re
-from pyrogram import Client, filters
+from pyrogram import Client, filters, idle
 from os import environ
 from dotenv import load_dotenv
 from os.path import join, dirname
 import string
 import validators
 from threading import Thread
+import threading
+import datetime
 
 
 
 
 #data structures:
 members:        list = []
+member_status:  dict = {}
 tgchannel:      str = ''
 tickers:        list = []
 tickers_pump:   dict = {}
@@ -44,6 +48,7 @@ stopwords:      list = []
 settings:       list = []
 opt:            dict = {}
 posts:          list = []
+
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
@@ -73,7 +78,7 @@ async def subscribe():
     # print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
 
 
-async def send_signal(user_name: str, ticker: str, signal_action: str, count_members: int = 0):
+def send_signal(user_name: str, ticker: str, signal_action: str, count_members: int = 0) -> None:
     #
     #
     # This function bot, for send signal to @user_name
@@ -84,33 +89,21 @@ async def send_signal(user_name: str, ticker: str, signal_action: str, count_mem
     # signal_action - up or down
     # count_members - source members num
     #
-    async with botTG:
-        print(' Отправляю сигнал для @' + user_name)
-        if tickers_pump[ticker]:
-            pump_num = count_members // int(opt['pump_for_page'])
-            if pump_num > 10:
-                pump_num = 10
-            if pump_num > 0:
-                pump_signal = 'PUMP ' + str(pump_num) + " из 10."
-        await botTG.send_message(user_name, "Сигнал: " + pump_signal + " " + ticker + " " + signal_action)
-
-
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+    print(bcolors.OKBLUE + ' Отправляю сигнал для ' + bcolors.ENDC + '@' + user_name)
+    pump_signal = ''
+    if tickers_pump[ticker]:
+        pump_num = count_members // int(opt['pump_for_page'])
+        if pump_num > 10:
+            pump_num = 10
+        if pump_num > 0:
+            pump_signal = 'PUMP ' + str(pump_num) + " из 10."
+    botTG.send_message(user_name, "Сигнал: " + pump_signal + " " + ticker + " " + signal_action)
 
 
 class Cryptobot:
         
 
-    def __init__(self, database) -> None:
+    def reinit(self, database) -> None:
         #
         # This function for get data from database
         #
@@ -128,11 +121,14 @@ class Cryptobot:
         global members
         global settings
 
+
         self.connection = pymysql.connect(**sockdata)
         self.cursor = self.connection.cursor()
 
 
         try:
+            urls = ''
+            last_ids = []
             with self.connection as connect:
                 # GET POSTS FROM DB
                 try:
@@ -241,6 +237,19 @@ class Cryptobot:
                 except Exception as ex:
                     print(bcolors.FAIL + '\n Ошибка! Не удалось прочитать подписчиков бота (members) :(\n', ex)
 
+                # GET USERNAME STATUS FOR MEMBERS BOT FROM DB
+                try:
+                    self.cursor.execute(
+                            "SELECT user_name,status FROM members")
+                    tmp = self.cursor.fetchall()
+                    for member in tmp:
+                        if member['status']:
+                            member_status[member['user_name']] = 1
+                        else:
+                            member_status[member['user_name']] = 0
+                except Exception as ex:
+                    print(bcolors.FAIL + '\n Ошибка! Не удалось прочитать подписчиков бота (members) :(\n', ex)
+
                 # GET SETTINGS FROM DB
                 try:
                     self.cursor.execute(
@@ -251,7 +260,8 @@ class Cryptobot:
                 except Exception as ex:
                     print(bcolors.FAIL + '\n Ошибка! Не удалось прочитать настройки бота (settings) :(\n', ex)
 
-                print(bcolors.OKGREEN + ' Данные успешно загружены из базы' + bcolors.ENDC + ' OK')
+                now = datetime.datetime.now();
+                print(bcolors.ENDC, now.strftime('%d %b %H:%M (%a)'), bcolors.OKGREEN + ' Данные успешно загружены из базы' + bcolors.ENDC + ' OK')
 
                 try:
                     for url in urls:
@@ -263,11 +273,13 @@ class Cryptobot:
                 except Exception as ex:
                     print(bcolors.FAIL + '\n Ошибка! Не удалось корректно выполнить все потоки парсера :(\n', ex)
 
+                threading.Timer(60.0, self.reinit, [database]).start()
+
         except Exception as ex:
             print(bcolors.FAIL + '\n Ошибка! Не удалось соединиться с базой данных или другая системная ошибка, извини, точнее не скажу :(\n', ex)
 
 
-    def parse_subscribers_num(url: str) -> int:
+    def parse_subscribers_num(self, url: str) -> int:
         """Функция для получения числа подписчиков из тинькофф.инвестиций
         args: url - строковое представление url
         return: возвращает число подписчиков пульсят по указанному url типа integer
@@ -318,59 +330,198 @@ class Cryptobot:
 
         else:
             ticker_name:    str = ""
+            tickers_arr:    list = []
             ticker_count:   int = 0
             signal_action:  str = ""
 
             for ticker in ticker_and_keywords:
 
-                if ticker.lower() in post_clean_text or set(ticker_and_keywords[ticker]) & set(post_clean_text.split()):
-                    print(bcolors.OKCYAN + " Найден тикер " + ticker + ", начинаю парсить пост…")
+                if ticker.lower() in post_clean_text or list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split())):
+                    print(bcolors.OKCYAN + " Найден тикер " + ticker + "…") # или ключевое слово
+                    # print(list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split())))
+
                     ticker_name = ticker
                     ticker_count += 1
 
-                    
-                    # Такой способ ищет слова и фразы в тексте поста
-                    #
-                    for word_for_up in self.wordsup_list:
-                        if word_for_up in post_clean_text:
-                            signal_action = "повышение"
-                            print(bcolors.OKCYAN + " Обнаружен сигнал на повышение для " + bcolors.ENDC + ticker + bcolors.OKCYAN + ", триггер: " + bcolors.ENDC + str(word_for_up)) 
+                    if list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split())):
+                        tickers_arr.append(list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split()))[0])
+                    else:
+                        tickers_arr.append(ticker)
+
+                
+            if ticker_count == 1:
+
+                # Такой способ ищет слова и фразы в тексте поста
+                #
+                for word_for_up in self.wordsup_list:
+                    if word_for_up in post_clean_text:
+                        signal_action = "повышение"
+                        print(bcolors.OKCYAN + " Обнаружен сигнал на повышение для " + bcolors.ENDC + ticker + bcolors.OKCYAN + ", триггер: " + bcolors.ENDC + str(word_for_up)) 
 
 
-                    # Такой способ ищет слова и фразы в тексте поста
-                    #
-                    for word_for_down in self.wordsdown_list:
-                        if word_for_down in post_clean_text:
-                            signal_action = "понижение"
-                            print(bcolors.OKCYAN + " Обнаружен сигнал на понижение для " + bcolors.ENDC + ticker + bcolors.OKCYAN + ", триггер: " + bcolors.ENDC + str(word_for_down))
+                # Такой способ ищет слова и фразы в тексте поста
+                #
+                for word_for_down in self.wordsdown_list:
+                    if word_for_down in post_clean_text:
+                        signal_action = "понижение"
+                        print(bcolors.OKCYAN + " Обнаружен сигнал на понижение для " + bcolors.ENDC + ticker + bcolors.OKCYAN + ", триггер: " + bcolors.ENDC + str(word_for_down))
 
+                if len(signal_action) < 3:
+                    print(bcolors.OKCYAN + " " + ticker_name + ", маркеров для сигнала не найдено, отправляю в песочницу.")
+                    query_sandbox = [(src_url, post_text, "Нет маркеров (" + ticker_name + ")")]
+                    try:
+                        with connection as connect:
+                            cursor.executemany(
+                                    "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
+                            connect.commit()
+                    except Exception as ex:
+                        print(bcolors.FAIL + '\n Не удалось добавить пост в песочницу :(\n', ex)
+                else:
+                    print(bcolors.OKGREEN + ' Отправляю сигнал ' + bcolors.ENDC + ticker_name + ' ' + signal_action + bcolors.OKGREEN + ' всем подписчикам')
+                    for user_name in members:
+                        for value in user_name.values():
+                            if member_status[value]:
+                                send_signal(value, ticker_name, signal_action, self.parse_subscribers_num(src_url))
+                            else:
+                                print(bcolors.ENDC + ' У @' + value + ' закончилась подписка')
 
-            if ticker_count == 1 and len(signal_action) < 3:
-                print(bcolors.OKCYAN + " " + ticker_name + ", маркеров для сигнала не найдено, отправляю в песочницу.")
-                query_sandbox = [(src_url, post_text, "Нет маркеров (" + ticker_name + ")")]
-                try:
-                    with connection as connect:
-                        cursor.executemany(
-                                "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
-                        connect.commit()
-                except Exception as ex:
-                    print(bcolors.FAIL + '\n Не удалось добавить пост в песочницу :(\n', ex)
-            elif ticker_count == 1:
-                print(bcolors.OKGREEN + ' Отправляю сигнал ' + bcolors.ENDC + ticker_name + ' ' + signal_action + bcolors.OKGREEN + ' всем подписчикам')
-                members_list: list = []
-                for user_name in members:
-                    for value in user_name.values():
-                        botTG.run(send_signal(value, ticker_name, signal_action, parse_subscribers_num(src_url)))
-            elif ticker_count >= 2:
+            elif ticker_count > 1:
                 print(bcolors.OKCYAN + " Найдено больше 1 тикера в посте!")
-                query_sandbox = [(src_url, post_text, "Больше 1 тикера")]
-                try:
-                    with connection as connect:
-                        cursor.executemany(
-                                "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
-                        connect.commit()
-                except Exception as ex:
-                    print(bcolors.FAIL + '\n Не удалось добавить пост в песочницу :(\n', ex)
+                num_ticker = 0
+
+                with connection as connect:
+                    while num_ticker < len(tickers_arr):
+                        s = post_clean_text.partition(tickers_arr[num_ticker].lower())
+                        ss = s[2][0:100].partition('\n\n')
+                        next_ticker = num_ticker + 1
+
+                        if 0 <= next_ticker < len(tickers_arr):
+                            sss = s[2][0:100].partition(tickers_arr[next_ticker].lower())
+
+                        if len(ss[2]) > 0:
+                            print(bcolors.ENDC + ' Текущий сигнал ищу до двойного переноса в части поста')
+                            # print('>>> ', ss[0][0:100]) # часть текста поста для поиска в нём слов из словаря сигналов
+                            # Такой способ ищет слова и фразы в тексте поста
+                            #
+                            for word_for_up in self.wordsup_list:
+                                if word_for_up in ss[0][0:100]:
+                                    signal_action = "повышение"
+                                    print(bcolors.OKCYAN + " Обнаружен сигнал на повышение для " + bcolors.ENDC + tickers_arr[num_ticker] + bcolors.OKCYAN + ", триггер: " + bcolors.ENDC + str(word_for_up)) 
+
+
+                            # Такой способ ищет слова и фразы в тексте поста
+                            #
+                            for word_for_down in self.wordsdown_list:
+                                if word_for_down in ss[0][0:100]:
+                                    signal_action = "понижение"
+                                    print(bcolors.OKCYAN + " Обнаружен сигнал на понижение для " + bcolors.ENDC + tickers_arr[num_ticker] + bcolors.OKCYAN + ", триггер: " + bcolors.ENDC + str(word_for_down))
+
+                            if len(signal_action) < 3:
+                                print(bcolors.OKCYAN + " " + tickers_arr[num_ticker] + ", маркеров для сигнала не найдено, отправляю в песочницу.")
+                                query_sandbox = [(src_url, ss[0][0:100], "Нет маркеров (" + tickers_arr[num_ticker] + ")")]
+                                try:
+                                    cursor.executemany(
+                                            "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
+                                except Exception as ex:
+                                    print(bcolors.FAIL + '\n Не удалось добавить пост в песочницу :(\n', ex)
+                            else:
+                                print(bcolors.OKGREEN + ' Отправляю сигнал ' + bcolors.ENDC + tickers_arr[num_ticker] + ' ' + signal_action + bcolors.OKGREEN + ' всем подписчикам')
+                                for user_name in members:
+                                    for value in user_name.values():
+                                        if member_status[value]:
+                                            send_signal(value, tickers_arr[num_ticker], signal_action, self.parse_subscribers_num(src_url))
+                                        else:
+                                            print(bcolors.ENDC + ' У @' + value + ' закончилась подписка')
+
+                            num_ticker +=1
+                            continue
+
+                        if len(sss[2]) > 0:
+                            print(bcolors.ENDC + ' Текущий сигнал ищу до упоминания следующего тикера в части поста')
+                            # print('>>> ', sss[0][0:100]) # часть текста поста для поиска в нём слов из словаря сигналов
+                            # Такой способ ищет слова и фразы в тексте поста
+                            #
+                            for word_for_up in self.wordsup_list:
+                                if word_for_up in sss[0][0:100]:
+                                    signal_action = "повышение"
+                                    print(bcolors.OKCYAN + " Обнаружен сигнал на повышение для " + bcolors.ENDC + tickers_arr[num_ticker] + bcolors.OKCYAN + ", триггер: " + bcolors.ENDC + str(word_for_up)) 
+
+
+                            # Такой способ ищет слова и фразы в тексте поста
+                            #
+                            for word_for_down in self.wordsdown_list:
+                                if word_for_down in sss[0][0:100]:
+                                    signal_action = "понижение"
+                                    print(bcolors.OKCYAN + " Обнаружен сигнал на понижение для " + bcolors.ENDC + tickers_arr[num_ticker] + bcolors.OKCYAN + ", триггер: " + bcolors.ENDC + str(word_for_down))
+
+                            if len(signal_action) < 3:
+                                print(bcolors.OKCYAN + " " + tickers_arr[num_ticker] + ", маркеров для сигнала не найдено, отправляю в песочницу.")
+                                query_sandbox = [(src_url, sss[0][0:100], "Нет маркеров (" + tickers_arr[num_ticker] + ")")]
+                                try:
+                                    cursor.executemany(
+                                            "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
+                                except Exception as ex:
+                                    print(bcolors.FAIL + '\n Не удалось добавить пост в песочницу :(\n', ex)
+                            else:
+                                print(bcolors.OKGREEN + ' Отправляю сигнал ' + bcolors.ENDC + tickers_arr[num_ticker] + ' ' + signal_action + bcolors.OKGREEN + ' всем подписчикам')
+                                for user_name in members:
+                                    for value in user_name.values():
+                                        if member_status[value]:
+                                            send_signal(value, tickers_arr[num_ticker], signal_action, self.parse_subscribers_num(src_url))
+                                        else:
+                                            print(bcolors.ENDC + ' У @' + value + ' закончилась подписка')
+
+                            num_ticker +=1
+                            continue
+
+                        print(bcolors.ENDC + ' Текущий сигнал ищу в 100 символов части поста')
+                        # print('>>> ', s[2][0:100]) # часть текста поста для поиска в нём слов из словаря сигналов
+                        # Такой способ ищет слова и фразы в тексте поста
+                        #
+                        for word_for_up in self.wordsup_list:
+                            if word_for_up in s[2][0:100]:
+                                signal_action = "повышение"
+                                print(bcolors.OKCYAN + " Обнаружен сигнал на повышение для " + bcolors.ENDC + tickers_arr[num_ticker] + bcolors.OKCYAN + ", триггер: " + bcolors.ENDC + str(word_for_up)) 
+
+
+                        # Такой способ ищет слова и фразы в тексте поста
+                        #
+                        for word_for_down in self.wordsdown_list:
+                            if word_for_down in s[2][0:100]:
+                                signal_action = "понижение"
+                                print(bcolors.OKCYAN + " Обнаружен сигнал на понижение для " + bcolors.ENDC + tickers_arr[num_ticker] + bcolors.OKCYAN + ", триггер: " + bcolors.ENDC + str(word_for_down))
+
+
+                        if len(signal_action) < 3:
+                            print(bcolors.OKCYAN + " " + tickers_arr[num_ticker] + ", маркеров для сигнала не найдено, отправляю в песочницу.")
+                            query_sandbox = [(src_url, s[2][0:100], "Нет маркеров (" + tickers_arr[num_ticker] + ")")]
+                            try:
+                                cursor.executemany(
+                                        "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
+                            except Exception as ex:
+                                print(bcolors.FAIL + '\n Не удалось добавить пост в песочницу :(\n', ex)
+                        else:
+                            print(bcolors.OKGREEN + ' Отправляю сигнал ' + bcolors.ENDC + tickers_arr[num_ticker] + ' ' + signal_action + bcolors.OKGREEN + ' всем подписчикам')
+                            for user_name in members:
+                                for value in user_name.values():
+                                    if member_status[value]:
+                                        send_signal(value, tickers_arr[num_ticker], signal_action, self.parse_subscribers_num(src_url))
+                                    else:
+                                        print(bcolors.ENDC + ' У @' + value + ' закончилась подписка')
+
+                        num_ticker += 1
+
+                    connect.commit()
+
+
+                # query_sandbox = [(src_url, post_text, "Больше 1 тикера")]
+                # try:
+                #     with connection as connect:
+                #         cursor.executemany(
+                #                 "INSERT INTO sandbox (src, post, reason) VALUES (%s, %s, %s);", query_sandbox)
+                #         connect.commit()
+                # except Exception as ex:
+                #     print(bcolors.FAIL + '\n Не удалось добавить пост в песочницу :(\n', ex)
             else:
                 print(bcolors.OKCYAN + " Не найдено ни одного тикера, отправляю пост в песочницу")
                 query_sandbox = [(src_url, post_text, "Нет тикеров")]
@@ -388,69 +539,74 @@ class Cryptobot:
         connection = pymysql.connect(**sockdata)
         cursor = connection.cursor()
         query_code = []
-        try:
-            with request.urlopen(url) as file:
-                src = file.read()
-                soup = BeautifulSoup(src, "lxml")
-                span_classe = soup.find("div", class_="PulsePost__wrapper_QkcQp")
-                post_div = span_classe.find("div", class_="TextLineCollapse__sizeS_BxRAe")
+        # try:
+        with request.urlopen(url) as file:
+            src = file.read()
+            soup = BeautifulSoup(src, "lxml")
+            span_classe = soup.find("div", class_="PulsePost__wrapper_QkcQp")
+            post_div = soup.find("div", class_="PulsePostBody__clickable_ygAE0").get_text()
 
-                # Находит и вырезает post_id, сохраняет его в переменную
-                find_post_id = re.compile(r'data-post-id="[^"]*"')
-                post_id = find_post_id.findall(str(span_classe))
-                post_id = post_id[0].partition('"')[2][:-1]
-                
-                
-                # Пропускаем пост, если он уже отправлялся
-                match str(post_id).strip('[]') in str(last_ids).strip('[]'):
-                    case True:
-                        print(bcolors.ENDC + ' Не отправляем пост', post_id) # Если пост уже отправлялся ранее
-                        
-                    case False:
+            # Находит и вырезает post_id, сохраняет его в переменную
+            find_post_id = re.compile(r'data-post-id="[^"]*"')
+            post_id = find_post_id.findall(str(span_classe))
+            post_id = post_id[0].partition('"')[2][:-1]
+            
+            
+            # Пропускаем пост, если он уже отправлялся
+            match str(post_id).strip('[]') in str(last_ids).strip('[]'):
+                case True:
+                    print(bcolors.ENDC + ' Не отправляем пост', post_id) # Если пост уже отправлялся ранее
+                    
+                case False:
 
-                        posts_list: list = []
-                        duplicate_post: bool = False
-                        print(bcolors.ENDC + ' Проверяю пост на существование дублей…')
-                        for post in posts:
-                            if duplicate_post:
-                                break
-                            df1 = post['post'].splitlines()
-                            df2 = post_div.text.splitlines()
-                            result = set(df1) & set(df2)
-                            if result:
-                                duplicate_post = True
-                                print(bcolors.WARNING + ' Такой пост уже есть в песочнице.')
-                        if duplicate_post != True:
-                            ticker_and_keywords: dict = {}
-                            for ticker in tickers:
-                                ticker_and_keywords[ticker['ticker']] = ticker['keywords'].split(',')
+                    posts_list: list = []
+                    duplicate_post: bool = False
+                    print(bcolors.ENDC + ' Проверяю пост на существование дублей…')
+                    for post in posts:
+                        if duplicate_post:
+                            break
+                        df1 = post['post'].splitlines()
+                        df2 = post_div.splitlines()
+                        result = set(df1) & set(df2)
+                        if len(result) == len(df2):
+                            duplicate_post = True
+                            print(bcolors.WARNING + ' Такой пост уже есть в песочнице.')
+                    if duplicate_post != True:
+                        ticker_and_keywords: dict = {}
+                        for ticker in tickers:
+                            ticker_and_keywords[ticker['ticker']] = ticker['keywords'].split(',')
 
-                            self.isTickerOrKeywords(ticker_and_keywords, post_div.text, url) # Отправляет текст поста в нижнем регистре в функцию парсинга поста на тикеры и ключи
+                        self.isTickerOrKeywords(ticker_and_keywords, post_div, url) # Отправляет текст поста в нижнем регистре в функцию парсинга поста на тикеры и ключи
 
-                # Записываем ID последнего отправленного поста, из URL источника
-                query_code.append((post_id, url))
-                # print(query_code)
- 
-                # Тут мы записываем ID последнего пересланного поста
-                try:
-                    with connection as connect:
-                        cursor.executemany(
-                                "UPDATE pages SET last_post_id = %s WHERE url = %s;", query_code)
-                        connect.commit()
-                except Exception as ex:
-                    print(bcolors.FAIL + '\n Ошибка! Не удалось обновить ID последнего поста из парсера (last post id from pages) :(\n', ex)
+            # Записываем ID последнего отправленного поста, из URL источника
+            query_code.append((post_id, url))
+            # print(query_code)
+
+            # Тут мы записываем ID последнего пересланного поста
+            try:
+                with connection as connect:
+                    cursor.executemany(
+                            "UPDATE pages SET last_post_id = %s WHERE url = %s;", query_code)
+                    connect.commit()
+            except Exception as ex:
+                print(bcolors.FAIL + '\n Ошибка! Не удалось обновить ID последнего поста из парсера (last post id from pages) :(\n', ex)
 
 
-        except Exception as ex:
-            print(bcolors.FAIL + " \nОшибка! Не удалось распарсить источник :(\n", ex)
+        # except Exception as ex:
+        #     print(bcolors.FAIL + " \nОшибка! Не удалось распарсить источник :(\n", ex)
 
 
     def close(self):
         self.connection.close()
 
 
-cryptobot = Cryptobot(sockdata)
 userbotTG.run(subscribe())
+botTG.start()
+cryptobot = Cryptobot()
+cryptobot.reinit(sockdata)
+idle()
+botTG.stop()
+
 # cryptobot.close()
 
 ##########################################################################
