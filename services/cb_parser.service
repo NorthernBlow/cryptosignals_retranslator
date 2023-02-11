@@ -8,3 +8,5 @@ Group=pooh
 WorkingDirectory=/home/pooh/cryptobot
 Environment="PATH=/home/pooh/cryptobot/env/bin"
 ExecStart=/home/pooh/cryptobot/env/bin/python main.py
+TimeoutSec=30
+Restart=always

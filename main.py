@@ -17,6 +17,7 @@
 from bs4 import BeautifulSoup
 import lxml
 from urllib import request
+import requests
 import pymysql
 from config import sockdata
 from config import bcolors
@@ -99,6 +100,14 @@ def send_signal(user_name: str, ticker: str, signal_action: str, count_members: 
         if pump_num > 0:
             pump_signal = 'PUMP ' + str(pump_num) + " из 10."
     botTG.send_message(user_name, "Сигнал: " + pump_signal + " " + ticker + " " + signal_action)
+
+
+def get_tor_session():
+    session = requests.session()
+    # Tor uses the 9050 port as the default socks port
+    session.proxies = {'http':  'socks5://127.0.0.1:9050',
+                       'https': 'socks5://127.0.0.1:9050'}
+    return session
 
 
 class Cryptobot:
@@ -340,7 +349,7 @@ class Cryptobot:
             for ticker in ticker_and_keywords:
 
                 prepare_ticker = ticker.lower()
-                prepare_ticker = ['$' + prepare_ticker + ' ', '$' + prepare_ticker + ',', '$' + prepare_ticker + ':', '$' + prepare_ticker + '.']
+                prepare_ticker = ['$' + prepare_ticker + ' ', '$' + prepare_ticker + ',', '$' + prepare_ticker + ':', '$' + prepare_ticker + '.', '$' + prepare_ticker + '\n']
 
                 for curr_ticker in prepare_ticker:
                     if curr_ticker in post_clean_text or list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split())):
@@ -353,7 +362,9 @@ class Cryptobot:
                         if list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split())):
                             tickers_arr.append(list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split()))[0])
                         else:
-                            tickers_arr.append(ticker)
+                            tickers_arr.append(curr_ticker)
+
+                        break
 
                 
             if ticker_count == 1:
@@ -545,75 +556,91 @@ class Cryptobot:
         # Here page for parse
         connection = pymysql.connect(**sockdata)
         cursor = connection.cursor()
+
+        response_good = False
+
+
+        try:
+            src = requests.get(url, timeout=10)
+            print(bcolors.ENDC + ' Прочитал пост…')
+            response_good = True
+        except Exception as ex:
+            print(bcolors.ENDC + ' Не удалось получить пост, пробую через ТОР…')
+
+        if response_good == False:
+            try:
+                session = get_tor_session()
+                src = session.get(url)
+                # socks.set_default_proxy(socks.SOCKS5, '127.0.0.1', 9050)
+                # socket.socket = socks.socksocket
+                
+            except Exception as ex:
+                print(bcolors.OKBLUE + ' [TOR] ' + bcolors.FAIL + 'Не удалось получить пост :(\n', ex)
+
         query_code = []
-        # try:
-        with request.urlopen(url) as file:
+        
 
-            try:
-                src = file.read()
-                soup = BeautifulSoup(src, "lxml")
-                span_classe = soup.find("div", class_="PulsePost__wrapper_QkcQp")
-                post_div = soup.find("div", class_="PulsePostBody__clickable_ygAE0")
-            except Exception as ex:
-                print(bcolors.FAIL + ' Не удалось получить страницу :(\n', ex)
-                return 0
-
-
-            if post_div == None:
-                print(bcolors.FAIL + ' Не удалось получить текст поста :(\n', ex)
-                return 0
-            else:
-                post_div = post_div.get_text()
+        try:
+            src.encoding = 'utf-8'
+            soup = BeautifulSoup(src.text, "lxml")
+            span_classe = soup.find("div", class_="PulsePost__wrapper_QkcQp")
+            post_div = soup.find("div", class_="PulsePostBody__clickable_ygAE0")
+        except Exception as ex:
+            print(bcolors.FAIL + ' Не удалось получить страницу :(\n', ex)
+            return 0
 
 
-            # Находит и вырезает post_id, сохраняет его в переменную
-            find_post_id = re.compile(r'data-post-id="[^"]*"')
-            post_id = find_post_id.findall(str(span_classe))
-            post_id = post_id[0].partition('"')[2][:-1]
-            
-            
-            # Пропускаем пост, если он уже отправлялся
-            match str(post_id).strip('[]') in str(last_ids).strip('[]'):
-                case True:
-                    print(bcolors.ENDC + ' Не отправляем пост', post_id) # Если пост уже отправлялся ранее
-                    
-                case False:
-
-                    posts_list: list = []
-                    duplicate_post: bool = False
-                    print(bcolors.ENDC + ' Проверяю пост на существование дублей…')
-                    for post in posts:
-                        if duplicate_post:
-                            break
-                        df1 = post['post'].splitlines()
-                        df2 = post_div.splitlines()
-                        result = set(df1) & set(df2)
-                        if len(result) == len(df2):
-                            duplicate_post = True
-                            print(bcolors.WARNING + ' Такой пост уже есть в песочнице.')
-                    if duplicate_post != True:
-                        ticker_and_keywords: dict = {}
-                        for ticker in tickers:
-                            ticker_and_keywords[ticker['ticker']] = ticker['keywords'].split(',')
-
-                        self.isTickerOrKeywords(ticker_and_keywords, post_div, url) # Отправляет текст поста в нижнем регистре в функцию парсинга поста на тикеры и ключи
-
-            # Записываем ID последнего отправленного поста, из URL источника
-            query_code.append((post_id, url))
-            # print(query_code)
-
-            # Тут мы записываем ID последнего пересланного поста
-            try:
-                with connection as connect:
-                    cursor.executemany(
-                            "UPDATE pages SET last_post_id = %s WHERE url = %s;", query_code)
-                    connect.commit()
-            except Exception as ex:
-                print(bcolors.FAIL + '\n Ошибка! Не удалось обновить ID последнего поста из парсера (last post id from pages) :(\n', ex)
+        if post_div == None:
+            print(bcolors.FAIL + ' Не удалось получить текст поста :(')
+            return 0
+        else:
+            post_div = post_div.get_text()
 
 
-        # except Exception as ex:
-        #     print(bcolors.FAIL + " \nОшибка! Не удалось распарсить источник :(\n", ex)
+        # Находит и вырезает post_id, сохраняет его в переменную
+        find_post_id = re.compile(r'data-post-id="[^"]*"')
+        post_id = find_post_id.findall(str(span_classe))
+        post_id = post_id[0].partition('"')[2][:-1]
+        
+        
+        # Пропускаем пост, если он уже отправлялся
+        match str(post_id).strip('[]') in str(last_ids).strip('[]'):
+            case True:
+                print(bcolors.ENDC + ' Не отправляем пост', post_id) # Если пост уже отправлялся ранее
+                
+            case False:
+
+                posts_list: list = []
+                duplicate_post: bool = False
+                print(bcolors.ENDC + ' Проверяю пост на существование дублей…')
+                for post in posts:
+                    if duplicate_post:
+                        break
+                    df1 = post['post'].splitlines()
+                    df2 = post_div.splitlines()
+                    result = set(df1) & set(df2)
+                    if len(result) == len(df2):
+                        duplicate_post = True
+                        print(bcolors.WARNING + ' Такой пост уже есть в песочнице.')
+                if duplicate_post != True:
+                    ticker_and_keywords: dict = {}
+                    for ticker in tickers:
+                        ticker_and_keywords[ticker['ticker']] = ticker['keywords'].split(',')
+
+                    self.isTickerOrKeywords(ticker_and_keywords, post_div, url) # Отправляет текст поста в нижнем регистре в функцию парсинга поста на тикеры и ключи
+
+        # Записываем ID последнего отправленного поста, из URL источника
+        query_code.append((post_id, url))
+        # print(query_code)
+
+        # Тут мы записываем ID последнего пересланного поста
+        try:
+            with connection as connect:
+                cursor.executemany(
+                        "UPDATE pages SET last_post_id = %s WHERE url = %s;", query_code)
+                connect.commit()
+        except Exception as ex:
+            print(bcolors.FAIL + '\n Ошибка! Не удалось обновить ID последнего поста из парсера (last post id from pages) :(\n', ex)
 
 
     def close(self):

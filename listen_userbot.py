@@ -161,7 +161,7 @@ async def listen(client, message):
                 #print('>>>>>>>>>>>>>>>>>>>>   ', ticker)
 
                 prepare_ticker = ticker.lower()
-                prepare_ticker = ['$' + prepare_ticker + ' ', '$' + prepare_ticker + ',', '$' + prepare_ticker + ':', '$' + prepare_ticker + '.']
+                prepare_ticker = ['$' + prepare_ticker + ' ', '$' + prepare_ticker + ',', '$' + prepare_ticker + ':', '$' + prepare_ticker + '.', '$' + prepare_ticker + '\n']
 
                 for curr_ticker in prepare_ticker:
                     if curr_ticker in post_clean_text or list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split())):

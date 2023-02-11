@@ -6,6 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Админ панель</title>
 	<link href="css/bootstrap.min.css" rel="stylesheet">
+	<link href="DataTables/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 </head>
 <body class="container-fluid">
 
@@ -933,10 +934,9 @@
 								</div>
 							</div>
 
-							<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
-							<link href="//cdn.datatables.net/1.13.2/css/dataTables.bootstrap5.css" rel="stylesheet">
-							<script src="//cdn.datatables.net/1.13.2/js/jquery.dataTables.min.js"></script>
-							<script src="//cdn.datatables.net/1.13.2/js/dataTables.bootstrap5.min.js"></script>
+							<script src="js/jquery-3.5.1.min.js"></script>
+							<script src="DataTables/js/jquery.dataTables.min.js"></script>
+							<script src="DataTables/js/dataTables.bootstrap5.min.js"></script>
 							<script src="js/bootstrap.bundle.min.js"></script>
 							<script type="text/javascript">
 								$(document).ready(function () {

@@ -6,3 +6,5 @@ token.php
 *.session*
 dump.json
 sandbox.sql
+test.py
+test2.py
