@@ -30,6 +30,7 @@ import validators
 from threading import Thread
 import threading
 import datetime
+import time
 
 
 
@@ -270,6 +271,7 @@ class Cryptobot:
                             continue
                         th = Thread(target=self.parsePage, args=(url, ))
                         th.start()
+                        time.sleep(1)
                 except Exception as ex:
                     print(bcolors.FAIL + '\n Ошибка! Не удалось корректно выполнить все потоки парсера :(\n', ex)
 
@@ -307,8 +309,9 @@ class Cryptobot:
         # для корректного сравнения.
         # Оригинальный пост сохраняется в post_text
         #
-        chars = re.escape(string.punctuation)
-        post_clean_text = re.sub(r'['+chars+']', '', post_text.lower())
+        # chars = re.escape(string.punctuation)
+        # post_clean_text = re.sub(r'['+chars+']', '', post_text.lower())
+        post_clean_text = post_text.lower()
 
         
         # Парсим стоп слова в тексте поста
@@ -336,17 +339,21 @@ class Cryptobot:
 
             for ticker in ticker_and_keywords:
 
-                if ticker.lower() in post_clean_text or list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split())):
-                    print(bcolors.OKCYAN + " Найден тикер " + ticker + "…") # или ключевое слово
-                    # print(list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split())))
+                prepare_ticker = ticker.lower()
+                prepare_ticker = ['$' + prepare_ticker + ' ', '$' + prepare_ticker + ',', '$' + prepare_ticker + ':', '$' + prepare_ticker + '.']
 
-                    ticker_name = ticker
-                    ticker_count += 1
+                for curr_ticker in prepare_ticker:
+                    if curr_ticker in post_clean_text or list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split())):
+                        print(bcolors.OKCYAN + " Найден тикер " + ticker + "…") # или ключевое слово
+                        # print(list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split())))
 
-                    if list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split())):
-                        tickers_arr.append(list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split()))[0])
-                    else:
-                        tickers_arr.append(ticker)
+                        ticker_name = ticker
+                        ticker_count += 1
+
+                        if list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split())):
+                            tickers_arr.append(list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split()))[0])
+                        else:
+                            tickers_arr.append(ticker)
 
                 
             if ticker_count == 1:
@@ -541,10 +548,23 @@ class Cryptobot:
         query_code = []
         # try:
         with request.urlopen(url) as file:
-            src = file.read()
-            soup = BeautifulSoup(src, "lxml")
-            span_classe = soup.find("div", class_="PulsePost__wrapper_QkcQp")
-            post_div = soup.find("div", class_="PulsePostBody__clickable_ygAE0").get_text()
+
+            try:
+                src = file.read()
+                soup = BeautifulSoup(src, "lxml")
+                span_classe = soup.find("div", class_="PulsePost__wrapper_QkcQp")
+                post_div = soup.find("div", class_="PulsePostBody__clickable_ygAE0")
+            except Exception as ex:
+                print(bcolors.FAIL + ' Не удалось получить страницу :(\n', ex)
+                return 0
+
+
+            if post_div == None:
+                print(bcolors.FAIL + ' Не удалось получить текст поста :(\n', ex)
+                return 0
+            else:
+                post_div = post_div.get_text()
+
 
             # Находит и вырезает post_id, сохраняет его в переменную
             find_post_id = re.compile(r'data-post-id="[^"]*"')

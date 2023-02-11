@@ -9,8 +9,8 @@
 ##########################################################################
 ###                         config.py                                  ###
 ###                                                                    ###
-###     This file config database bot and               							 ###
-###     other settings.			                                           ###
+###     This file config database bot and               			   ###
+###     other settings.			                                       ###
 ##########################################################################
 
 
@@ -25,7 +25,8 @@ sockdata = {
 	'user': 'root',
 	'password': '',
 	'database': 'test',
-	'cursorclass': pymysql.cursors.DictCursor
+	'cursorclass': pymysql.cursors.DictCursor,
+    'init_command': 'SET GLOBAL max_connections = 300'
 }
 
 class bcolors:

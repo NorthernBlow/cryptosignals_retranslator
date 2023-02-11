@@ -42,7 +42,7 @@ opt:            dict = {}
 load_dotenv(join(dirname(__file__), '.env'))
 botTG = Client('listen_userbot_bot', api_id=environ.get('API_ID'), api_hash=environ.get('API_HASH'), bot_token=environ.get('TOKENTG'))
 userbotTG = Client('listen_userbot', api_id=environ.get('API_ID'), api_hash=environ.get('API_HASH'))
-chars = re.escape(string.punctuation)
+# chars = re.escape(string.punctuation)
 
 async def send_signal(user_name: str, ticker: str, signal_action: str, count_members: int = 0):
     #
@@ -141,7 +141,8 @@ async def listen(client, message):
                 wordsdown_list = wordsdown_list + value.split(',')
         #wordsdown_list = map(str.lower, wordsdown_list)
 
-        post_clean_text = re.sub(r'['+chars+']', '', str(message.text).lower())
+        # post_clean_text = re.sub(r'['+chars+']', '', str(message.text).lower())
+        post_clean_text = str(message.text).lower()
         sandbox = list(set(stopwords_list) & set(post_clean_text.split()))
         if sandbox:
             print(bcolors.OKCYAN + " Найдено стоп слово: " + sandbox[0])
@@ -158,16 +159,21 @@ async def listen(client, message):
 
             for ticker in ticker_and_keywords:
                 #print('>>>>>>>>>>>>>>>>>>>>   ', ticker)
-                if ticker.lower() in post_clean_text or list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split())):
-                    print(bcolors.OKCYAN + " Найден тикер " + ticker + "…") # или ключевое слово
 
-                    ticker_name = ticker
-                    ticker_count += 1
+                prepare_ticker = ticker.lower()
+                prepare_ticker = ['$' + prepare_ticker + ' ', '$' + prepare_ticker + ',', '$' + prepare_ticker + ':', '$' + prepare_ticker + '.']
 
-                    if list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split())):
-                        tickers_arr.append(list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split()))[0])
-                    else:
-                        tickers_arr.append(ticker)
+                for curr_ticker in prepare_ticker:
+                    if curr_ticker in post_clean_text or list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split())):
+                        print(bcolors.OKCYAN + " Найден тикер " + ticker + "…") # или ключевое слово
+
+                        ticker_name = ticker
+                        ticker_count += 1
+
+                        if list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split())):
+                            tickers_arr.append(list(set(ticker_and_keywords[ticker]) & set(post_clean_text.split()))[0])
+                        else:
+                            tickers_arr.append(ticker)
 
 
             if ticker_count == 1:
