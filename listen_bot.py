@@ -74,4 +74,19 @@ async def save_user_id(client, message):
             await message.reply('❌ Ты указал недействительный токен, обратись к @northernblow или @pooh2pooh для покупки.')
     else:
         await message.reply('❌ Ты не указал код приглашения,\nиспользуй `/start <код>`\n\nЕсли у тебя его нет, обратись к @northernblow или @pooh2pooh для покупки.')
+
+
+
+
+
+
+@botTG.on_message(filters.new_chat_members)
+async def welcome_message(client, message):
+    welcome_msg = 'напиши /start для продолжения'
+    await message.reply_text('Привет, ты подписался на рассылку Cryptobot! \n%s' % (welcome_msg), disable_web_page_preview=True)
+
+
+
+
+
 botTG.run()
